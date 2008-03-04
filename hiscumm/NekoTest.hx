@@ -20,8 +20,8 @@ class NekoTest
 	
 	static function main() {
 		resources = new Array<ByteArray>();
-		resources.push(new FileByteArray("SCUMMC.000"));
-		resources.push(new FileByteArray("SCUMMC.001"));
+		//resources.push(new FileByteArray("SCUMMC.000"));
+		//resources.push(new FileByteArray("SCUMMC.001"));
 		engine = new SPUTM(resources);
 	}
 }
