@@ -49,7 +49,7 @@ class Int32
 	
 	static public inline function make(a : Int, b : Int) : Int32
 	{
-		return Int32.add(Int32.shl(cast a,16),cast b);
+		return new Int32((a << 16) + b);
 	}
 	
 	static public inline function mod(a : Int32, b : Int32) : Int32
