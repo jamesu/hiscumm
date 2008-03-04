@@ -18,75 +18,46 @@ import hiscumm.Common;
 		
 		while (myReader.nextChunk())
 		{
-			trace("CHUNK=" + myReader.chunkName() + " @ " + myReader.chunkOffs);
+			trace("CHUNK=" + myReader.chunkName() + " @ " + my_bytes.pos);
 		}
 */
 
 class ChunkReader
 {
-	private var byteReader: ByteArray;
-	public var chunkID: Int;
+	private var reader: Input;
+	public var chunkID: Int32;
 	public var chunkSize: Int;
-	public var chunkOffs: Int;
 
-	private var maxPos: Int;
-
-	public function new(bytes: ByteArray, max: Int)
+	public function new(bytes: Input)
 	{
-		byteReader = bytes;
-		maxPos = max;
+		reader = bytes;
 		
-		chunkID = 0;
+		chunkID = Int32.ofInt(0);
 		chunkSize = 0;
-		chunkOffs = 0;
-	}
-
-	public function nest() : ChunkReader
-	{
-		var newReader: ChunkReader = new ChunkReader(byteReader, chunkOffs + chunkSize);
-		newReader.chunkOffs = byteReader.position;
-		return newReader;
 	}
 
 	public function chunkName() : String
 	{
-		if (chunkID == 0)
+		if (Int32.compare(chunkID, Int32.ofInt(0)) == 0)
 			return "????";
 
-		return (String.fromCharCode(chunkID >> 24) +
-		       String.fromCharCode((chunkID >> 16) & 0xFF) +
-		       String.fromCharCode((chunkID >> 8) & 0xFF) +
-		       String.fromCharCode(chunkID & 0xFF));
+		return chunkIDToStr(chunkID);
 	}
-
-	public function bytesAvailable() : Int
+	
+	public static inline function chunkIDToStr(name: Int32) : String
 	{
-		if (maxPos != -1)
-		{
-			return (maxPos - byteReader.position);
-		}
-		else
-		{
-			return byteReader.bytesAvailable;
-		}
+		return (String.fromCharCode(Int32.toInt(Int32.shr(name, 24))) +
+		       String.fromCharCode(Int32.toInt(Int32.and(Int32.shr(name, 16), Int32.ofInt(0xFF)))) +
+		       String.fromCharCode(Int32.toInt(Int32.and(Int32.shr(name, 8), Int32.ofInt(0xFF)))) +
+		       String.fromCharCode(Int32.toInt(Int32.and(name, Int32.ofInt(0xFF)))));
 	}
 
 	public function nextChunk() : Bool
 	{
 		var oldEndian: String;
 
-		byteReader.position = chunkOffs + chunkSize;
-		if (bytesAvailable() < 8)
-			return false;
-
-		oldEndian = byteReader.endian;
-		byteReader.endian = "bigEndian";
-
-		chunkOffs = byteReader.position;
-		chunkID = byteReader.readUnsignedInt();
-		chunkSize = byteReader.readUnsignedInt();
-
-		byteReader.endian = oldEndian;
+		chunkID = reader.readUnsignedInt();
+		chunkSize = reader.readUnsignedInt();
 
 		return true;
 	}
