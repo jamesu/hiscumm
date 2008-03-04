@@ -54,10 +54,15 @@ class ChunkReader
 
 	public function nextChunk() : Bool
 	{
-		var oldEndian: String;
-
-		chunkID = reader.readUnsignedInt();
-		chunkSize = reader.readUnsignedInt();
+		try
+		{
+			chunkID = Int32.read(reader);
+			chunkSize = Int32.toInt(Int32.read(reader)); // 31 bits should suffice...
+		}
+		catch (e: Dynamic)
+		{
+			return false;
+		}
 
 		return true;
 	}
