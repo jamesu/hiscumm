@@ -1,4 +1,4 @@
-package hiscumm;
+	package hiscumm;
 /*
 hiscumm
 -----------
