@@ -11,7 +11,7 @@ test
 */
 
 import hiscumm.SPUTM;
-import noflash.ByteArray;
+import hiscumm.Common;
 
 class NekoTest
 {

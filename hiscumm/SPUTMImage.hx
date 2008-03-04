@@ -6,19 +6,7 @@ hiscumm
 Portions derived from code Copyright (C) 2004-2006 Alban BedelThis program is free software; you can redistribute it and/ormodify it under the terms of the GNU General Public Licenseas published by the Free Software Foundation; either version 2of the License, or (at your option) any later version.This program is distributed in the hope that it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty ofMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theGNU General Public License for more details.You should have received a copy of the GNU General Public Licensealong with this program; if not, write to the Free SoftwareFoundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#if flash9
-import flash.display.BitmapData;
-import flash.utils.ByteArray;
-import flash.geom.Rectangle;
-#else neko
-import noflash.ByteArray;
-import noflash.BitmapData;
-import noflash.Rectangle;
-#else js
-import noflash.ByteArray;
-import noflash.BitmapData;
-import noflash.Rectangle;
-#end
+import hiscumm.Common;
 
 /*
 	SPUTMImage
@@ -28,7 +16,7 @@ import noflash.Rectangle;
 	Differences between scvm code:
 		- while (true) { [code] if (cond) break; } used instead of do {[code]} while (cond);
 		- READ_BIT conditions re-arranged as haXe doesn't seem to support the comma operator
-		- READ_BIT and FILL_BITS put in as-is since haXe doesn't support #define
+		- READ_BIT and FILL_BITS are inline as haXe doesn't support #define
 		- Pixels written as 32bit integers so the images can easily be converted to BitmapData.
 	
 	TODO:
