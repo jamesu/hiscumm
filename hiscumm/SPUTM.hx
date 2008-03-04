@@ -222,22 +222,22 @@ class SPUTM
 	public static var instance: SPUTM = null;
 	
 	// Index chunks
-	public static inline var RNAM: Int = 0x524E414D;
-	public static inline var MAXS: Int = 0x4D415853;
-	public static inline var DROO: Int = 0x44524F4F;
-	public static inline var DSCR: Int = 0x44534352;
-	public static inline var DSOU: Int = 0x44534F55;
-	public static inline var DCOS: Int = 0x44434F53;
-	public static inline var DCHR: Int = 0x44434852;
-	public static inline var DOBJ: Int = 0x444F424A;
-	public static inline var AARY: Int = 0x41415259;
+	public static inline var RNAM: Int32 = Int32.make(0x524E, 0x414D);
+	public static inline var MAXS: Int32 = Int32.make(0x4D41, 0x5853);
+	public static inline var DROO: Int32 = Int32.make(0x4452, 0x4F4F);
+	public static inline var DSCR: Int32 = Int32.make(0x4453, 0x4352);
+	public static inline var DSOU: Int32 = Int32.make(0x4453, 0x4F55);
+	public static inline var DCOS: Int32 = Int32.make(0x4443, 0x4F53);
+	public static inline var DCHR: Int32 = Int32.make(0x4443, 0x4852);
+	public static inline var DOBJ: Int32 = Int32.make(0x444F, 0x424A);
+	public static inline var AARY: Int32 = Int32.make(0x4141, 0x5259);
 
 	// Resource chunks
-	public static inline var LECF: Int = 0x4C454346;
-	public static inline var LOFF: Int = 0x4C4F4646;
-	public static inline var SCRP: Int = 0x53435250;
-	static public inline var COST: Int = 0x434F5354;
-	public static inline var ROOM: Int = 0x524F4F4D;
+	public static inline var LECF: Int32 = Int32.make(0x4C45, 0x4346);
+	public static inline var LOFF: Int32 = Int32.make(0x4C4F, 0x4646);
+	public static inline var SCRP: Int32 = Int32.make(0x5343, 0x5250);
+	static public inline var COST: Int32 = Int32.make(0x434F, 0x5354);
+	public static inline var ROOM: Int32 = Int32.make(0x524F, 0x4F4D);
 
 	// Resource types
 	public static inline var RES_SCRIPT: Int = 0;

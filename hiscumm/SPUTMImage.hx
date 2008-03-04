@@ -26,7 +26,7 @@ import hiscumm.Common;
 
 class SPUTMImage
 {
-	static public var SMAP: Int = 0x534D4150;
+	static public var SMAP: Int = new Int32(0x534D, 4150);
 	static public var ZP: Int = 0x0;
 	
 	public var zplanes: Array<BitmapData>;

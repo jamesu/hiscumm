@@ -22,25 +22,25 @@ import hiscumm.SPUTMResource;
 
 class SPUTMRoom
 {
-	static public var RMHD: Int = 0x524D4844;
-	static public var CYCL: Int = 0x4359434C;
-	static public var TRNS: Int = 0x54524E53;
-	static public var PALS: Int = 0x50414C53;
-	static public var RMIM: Int = 0x524D494D;
-	static public var OBIM: Int = 0x4F42494D;
-	static public var OBCD: Int = 0x4F424344;
-	static public var EXCD: Int = 0x45584344;
-	static public var ENCD: Int = 0x454E4344;
-	static public var NLSC: Int = 0x4E4C5343;
-	static public var LSCR: Int = 0x4C534352;
-	static public var BOXD: Int = 0x424F5844;
-	static public var BOXM: Int = 0x424F584D;
-	static public var SCAL: Int = 0x5343414C;
-	static public var IM00: Int = 0x494D3030;
+	static public var RMHD: Int32 = Int32.make(0x524D, 0x4844);
+	static public var CYCL: Int32 = Int32.make(0x4359, 0x434C);
+	static public var TRNS: Int32 = Int32.make(0x5452, 0x4E53);
+	static public var PALS: Int32 = Int32.make(0x5041, 0x4C53);
+	static public var RMIM: Int32 = Int32.make(0x524D, 0x494D);
+	static public var OBIM: Int32 = Int32.make(0x4F42, 0x494D);
+	static public var OBCD: Int32 = Int32.make(0x4F42, 0x4344);
+	static public var EXCD: Int32 = Int32.make(0x4558, 0x4344);
+	static public var ENCD: Int32 = Int32.make(0x454E, 0x4344);
+	static public var NLSC: Int32 = Int32.make(0x4E4C, 0x5343);
+	static public var LSCR: Int32 = Int32.make(0x4C53, 0x4352);
+	static public var BOXD: Int32 = Int32.make(0x424F, 0x5844);
+	static public var BOXM: Int32 = Int32.make(0x424F, 0x584D);
+	static public var SCAL: Int32 = Int32.make(0x5343, 0x414C);
+	static public var IM00: Int32 = Int32.make(0x494D, 0x3030);
 	
-	static public var WRAP: Int = 0x57524150;
-	static public var OFFS: Int = 0x4F464653;
-	static public var APAL: Int = 0x4150414C;
+	static public var WRAP: Int32 = Int32.make(0x5752, 0x4150);
+	static public var OFFS: Int32 = Int32.make(0x4F46, 0x4653);
+	static public var APAL: Int32 = Int32.make(0x4150, 0x414C);
 	
 	public var id: Int;
 	public var scripts: Array<SCUMMScript>;
