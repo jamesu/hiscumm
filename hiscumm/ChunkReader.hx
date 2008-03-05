@@ -51,13 +51,23 @@ class ChunkReader
 		       String.fromCharCode(Int32.toInt(Int32.and(Int32.shr(name, 8), Int32.ofInt(0xFF)))) +
 		       String.fromCharCode(Int32.toInt(Int32.and(name, Int32.ofInt(0xFF)))));
 	}
+	
+	public function readChunkData() : MemoryIO
+	{
+		var mem = new MemoryIO();
+		mem.prepare(chunkSize);
+		
+		mem.writeInput(reader);
+		
+		return mem;
+	}
 
 	public function nextChunk() : Bool
 	{
 		try
 		{
-			chunkID = Int32.read(reader);
-			chunkSize = Int32.toInt(Int32.read(reader)); // 31 bits should suffice...
+			chunkID = Int32.read(reader, true);
+			chunkSize = Int32.toInt(Int32.read(reader, true)); // 31 bits should suffice...
 		}
 		catch (e: Dynamic)
 		{
