@@ -15,9 +15,11 @@ typedef Rectangle = flash.geom.Rectangle;
 typedef Point = flash.geom.Point;
 typedef Timer = flash.utils.Timer;
 typedef TimerEvent = flash.events.TimerEvent;
+typedef Int32 = noneko.Int32;
+typedef MemoryIO = utils.FlashByteIO;
+typedef ResourceIO = utils.FlashByteIO;
 typedef Input = noneko.Input;
 typedef Output = noneko.Output;
-typedef Int32 = noneko.Int32;
 #else neko
 typedef ByteArray = noflash.ByteArray;
 typedef Bitmap = noflash.Bitmap;
@@ -27,6 +29,10 @@ typedef Point = noflash.Point;
 typedef Timer = noflash.Timer;
 typedef TimerEvent = noflash.TimerEvent;
 typedef Int32 = neko.Int32;
+//typedef MemoryIO = utils.FlashByteIO; TODO
+//typedef ResourceIO = neko.io.FlashByteIO; TODO
+typedef Input = neko.io.Input;
+typedef Output = neko.io.Output;
 #else js
 typedef ByteArray = noflash.ByteArray;
 typedef Bitmap = noflash.Bitmap;
@@ -35,7 +41,9 @@ typedef Rectangle = noflash.Rectangle;
 typedef Point = noflash.Point;
 typedef Timer = noflash.Timer;
 typedef TimerEvent = noflash.TimerEvent;
+typedef Int32 = noneko.Int32;
+//typedef MemoryIO = utils.FlashByteIO; TODO
+//typedef ResourceIO = neko.io.FlashByteIO; TODO
 typedef Input = noneko.Input;
 typedef Output = noneko.Output;
-typedef Int32 = noneko.Int32;
 #end
