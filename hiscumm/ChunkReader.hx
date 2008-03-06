@@ -6,6 +6,7 @@ hiscumm
 */
 
 import hiscumm.Common;
+import utils.Seekable;
 
 /*
 	ChunkReader
@@ -24,16 +25,16 @@ import hiscumm.Common;
 
 class ChunkReader
 {
-	private var reader: Input;
+	private var reader: ResourceIO;
 	public var chunkID: Int32;
 	public var chunkSize: Int;
+	public var chunkOffs: Int;
 
-	public function new(bytes: Input)
+	public function new(bytes: ResourceIO)
 	{
 		reader = bytes;
 		
-		chunkID = Int32.ofInt(0);
-		chunkSize = 0;
+		reset();
 	}
 
 	public function chunkName() : String
@@ -42,6 +43,13 @@ class ChunkReader
 			return "????";
 
 		return chunkIDToStr(chunkID);
+	}
+	
+	public function reset() : Void
+	{
+		chunkID = Int32.ofInt(0);
+		chunkSize = 0;
+		chunkOffs = -1;
 	}
 	
 	public static inline function chunkIDToStr(name: Int32) : String
@@ -64,8 +72,12 @@ class ChunkReader
 
 	public function nextChunk() : Bool
 	{
+		if (chunkOffs >= 0)
+			reader.seek(chunkOffs + chunkSize, SeekBegin);
+		
 		try
 		{
+			chunkOffs = reader.tell();
 			chunkID = Int32.read(reader, true);
 			chunkSize = Int32.toInt(Int32.read(reader, true)); // 31 bits should suffice...
 		}
