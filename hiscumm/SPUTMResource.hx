@@ -8,8 +8,126 @@ Portions derived from code Copyright (C) 2004-2006  Alban Bedel
 */
 
 import hiscumm.Common;
+import utils.Seekable;
 
 import hiscumm.SPUTM;
+
+enum SPUTMResourceChunkType
+{	
+	// Index chunks
+	CHUNK_RNAM;
+	CHUNK_MAXS;
+	CHUNK_DROO;
+	CHUNK_DSCR;
+	CHUNK_DSOU;
+	CHUNK_DCOS;
+	CHUNK_DCHR;
+	CHUNK_DOBJ;
+	CHUNK_AARY;
+
+	// Resource chunks
+	CHUNK_LECF;
+	CHUNK_LOFF;
+	CHUNK_SCRP;
+	CHUNK_COST;
+	CHUNK_ROOM;
+		
+	// Image chunks
+	CHUNK_SMAP;
+		
+	// Room chunks
+		
+	CHUNK_RMHD;
+	CHUNK_CYCL;
+	CHUNK_TRNS;
+	CHUNK_PALS;
+	CHUNK_RMIM;
+	CHUNK_OBIM;
+	CHUNK_OBCD;
+	CHUNK_EXCD;
+	CHUNK_ENCD;
+	CHUNK_NLSC;
+	CHUNK_LSCR;
+	CHUNK_BOXD;
+	CHUNK_BOXM;
+	CHUNK_SCAL;
+	CHUNK_IM00;
+	
+	CHUNK_WRAP;
+	CHUNK_OFFS;
+	CHUNK_APAL;
+
+	CHUNK_UNKNOWN;
+}
+
+class SPUTMResourceChunk
+{
+	public var chunkID: Int32;
+	public var chunkType: SPUTMResourceChunkType;
+	
+	public function new(a: SPUTMResourceChunkType, b: Int32)
+	{
+		chunkID = b;
+		chunkType = a;
+	}
+	
+	public static function identify(value: Int32) : SPUTMResourceChunkType
+	{
+		for (ct in chunkTypes)
+		{
+			if (Int32.compare(ct.chunkID, value) == 0)
+				return ct.chunkType;
+		}
+		
+		return CHUNK_UNKNOWN;
+	}
+	
+	public static var chunkTypes: Array<SPUTMResourceChunk> = [
+	
+		// Index chunks
+		new SPUTMResourceChunk(CHUNK_RNAM, Int32.make(0x524E, 0x414D)),
+		new SPUTMResourceChunk(CHUNK_MAXS, Int32.make(0x4D41, 0x5853)),
+		new SPUTMResourceChunk(CHUNK_DROO, Int32.make(0x4452, 0x4F4F)),
+		new SPUTMResourceChunk(CHUNK_DSCR, Int32.make(0x4453, 0x4352)),
+		new SPUTMResourceChunk(CHUNK_DSOU, Int32.make(0x4453, 0x4F55)),
+		new SPUTMResourceChunk(CHUNK_DCOS, Int32.make(0x4443, 0x4F53)),
+		new SPUTMResourceChunk(CHUNK_DCHR, Int32.make(0x4443, 0x4852)),
+		new SPUTMResourceChunk(CHUNK_DOBJ, Int32.make(0x444F, 0x424A)),
+		new SPUTMResourceChunk(CHUNK_AARY, Int32.make(0x4141, 0x5259)),
+
+		// Resource chunks
+		new SPUTMResourceChunk(CHUNK_LECF, Int32.make(0x4C45, 0x4346)),
+		new SPUTMResourceChunk(CHUNK_LOFF, Int32.make(0x4C4F, 0x4646)),
+		new SPUTMResourceChunk(CHUNK_SCRP, Int32.make(0x5343, 0x5250)),
+		new SPUTMResourceChunk(CHUNK_COST, Int32.make(0x434F, 0x5354)),
+		new SPUTMResourceChunk(CHUNK_ROOM, Int32.make(0x524F, 0x4F4D)),
+		
+		// Image chunks
+		new SPUTMResourceChunk(CHUNK_SMAP, Int32.make(0x534D, 0x4150)),
+		
+		// Room chunks
+		
+		new SPUTMResourceChunk(CHUNK_RMHD, Int32.make(0x524D, 0x4844)),
+		new SPUTMResourceChunk(CHUNK_CYCL, Int32.make(0x4359, 0x434C)),
+		new SPUTMResourceChunk(CHUNK_TRNS, Int32.make(0x5452, 0x4E53)),
+		new SPUTMResourceChunk(CHUNK_PALS, Int32.make(0x5041, 0x4C53)),
+		new SPUTMResourceChunk(CHUNK_RMIM, Int32.make(0x524D, 0x494D)),
+		new SPUTMResourceChunk(CHUNK_OBIM, Int32.make(0x4F42, 0x494D)),
+		new SPUTMResourceChunk(CHUNK_OBCD, Int32.make(0x4F42, 0x4344)),
+		new SPUTMResourceChunk(CHUNK_EXCD, Int32.make(0x4558, 0x4344)),
+		new SPUTMResourceChunk(CHUNK_ENCD, Int32.make(0x454E, 0x4344)),
+		new SPUTMResourceChunk(CHUNK_NLSC, Int32.make(0x4E4C, 0x5343)),
+		new SPUTMResourceChunk(CHUNK_LSCR, Int32.make(0x4C53, 0x4352)),
+		new SPUTMResourceChunk(CHUNK_BOXD, Int32.make(0x424F, 0x5844)),
+		new SPUTMResourceChunk(CHUNK_BOXM, Int32.make(0x424F, 0x584D)),
+		new SPUTMResourceChunk(CHUNK_SCAL, Int32.make(0x5343, 0x414C)),
+		new SPUTMResourceChunk(CHUNK_IM00, Int32.make(0x494D, 0x3030)),
+	
+		new SPUTMResourceChunk(CHUNK_WRAP, Int32.make(0x5752, 0x4150)),
+		new SPUTMResourceChunk(CHUNK_OFFS, Int32.make(0x4F46, 0x4653)),
+		new SPUTMResourceChunk(CHUNK_APAL, Int32.make(0x4150, 0x414C))
+	];
+}
 
 /*
 	SPUTMResource
@@ -69,7 +187,7 @@ class SPUTMResourceFactory
 		name = "UNKNOWN";
 	}
 	
-	public function load(num: Int, reader: ByteArray) : Dynamic
+	public function load(num: Int, reader: ResourceIO) : Dynamic
 	{
 		return null;
 	}
@@ -92,12 +210,11 @@ class SPUTMResourceList
 		res = new Array<SPUTMResource>();
 		res[num-1] = null;
 		
-		trace("YAYAYAYAY");
 		num_res = num;
 		factory = fct;
 	}
 
-	public function loadResourceIndexes(reader: ByteArray)
+	public function loadResourceIndexes(reader: Input)
 	{
 		var i: Int;
 		var sputm: SPUTM = SPUTM.instance;
@@ -105,21 +222,21 @@ class SPUTMResourceList
 		var resource: SPUTMResource;
 		var num: Int;
 
-		num = reader.readShort();
+		num = reader.readUInt16();
 		if (num != num_res)
 		{
 			trace("Invalid index block!");
 			return;
 		}
 		
-		trace("Loading " + num + " indexes");
+		//trace("Loading " + num + " indexes");
 		
 		for (i in 0...num)
 		{
 			resource = new SPUTMResource();
 			res[i] = resource;
 
-			resource.room = reader.readByte();
+			resource.room = reader.readInt8();
 			if (resource.room >= sputm.vm_res[SPUTM.RES_ROOM].res.length)
 			{
 			   //trace(resource.room + "," + sputm.vm_res[SPUTM.RES_ROOM].res.length);
@@ -135,11 +252,11 @@ class SPUTMResourceList
 		for (i in 0...num)
 		{
 			resource = res[i];
-			resource.offset = reader.readInt() + sputm.vm_res[SPUTM.RES_ROOM].res[resource.room].offset;
+			resource.offset = reader.readUInt32() + sputm.vm_res[SPUTM.RES_ROOM].res[resource.room].offset;
 		}
 	}
 	
-	public function loadResourceIndexesAlt(reader: ByteArray)
+	public function loadResourceIndexesAlt(reader: Input)
 	{
 		var i: Int;
 		var sputm: SPUTM = SPUTM.instance;
@@ -147,21 +264,21 @@ class SPUTMResourceList
 		var resource: SPUTMResource;
 		var num: Int;
 
-		num = reader.readShort();
+		num = reader.readUInt16();
 		if (num != num_res)
 		{
 			trace("Invalid index block!");
 			return;
 		}
 		
-		trace("Loading " + num + " indexes");
+		//trace("Loading " + num + " indexes");
 		
 		for (i in 0...num)
 		{
 			resource = new SPUTMResource();
 			res[i] = resource;
 
-			resource.room = reader.readByte(); // i.e. owner | state
+			resource.room = reader.readInt8(); // i.e. owner | state
 		}
 	}
 
@@ -169,14 +286,15 @@ class SPUTMResourceList
 	{
 		var resource: SPUTMResource = res[idx];
 		if (idx != 0)
-			trace("Loading resource " + idx + " from file " + resource.file + " (" + factory.name + ")");
+			trace("Loading resource " + idx + " from file " + resource.file + ", room " + resource.room + " (" + factory.name + ")");
 		else
 		{
 			trace("Invalid resource 0!");
 			return null;
 		}
-		var reader: ByteArray = SPUTM.instance.vm_files[resource.file];
-		reader.position = resource.offset;
+		
+		var reader: ResourceIO = SPUTM.instance.vm_files[resource.file];
+		reader.seek(resource.offset, SeekBegin);
 		resource.instance = factory.load(idx, reader);
 		return resource.instance;
 	}

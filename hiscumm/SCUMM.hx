@@ -7,6 +7,7 @@ Portions derived from code Copyright (C) 2004-2006 Alban BedelThis program is 
 */
 
 import hiscumm.Common;
+import utils.Seekable;
 
 import hiscumm.SPUTM.SPUTMState;
 import hiscumm.SPUTMResource;
@@ -107,34 +108,34 @@ class SCUMMThread
 	
 	public function jump(pos: Int) : Void
 	{
-		if (pos < 0 || pos >= script.code.length)
+		if (pos < 0 || pos >= script.size)
 		{
 			return_state = SPUTM_ERROR;
 			return;
 		}
 		
-		script.code.position = pos;
+		script.code.seek(pos, SeekBegin);
 	}
 	
 	public function jumpRel(offset: Int) : Void
 	{
-		var newpos: Int = script.code.position + offset;
+		var newpos: Int = script.code.tell() + offset;
 		
-		if (newpos < 0 || newpos >= script.code.length)
+		if (newpos < 0 || newpos >= script.size)
 		{
 			return_state = SPUTM_ERROR;
 			return;
 		}
 		
-		script.code.position = newpos;
+		script.code.seek(newpos, SeekBegin);
 	}
   
 	public function beginOverride() : Bool
 	{
-		if (script.code.position + 3 > script.code.length)
+		if (script.code.tell() + 3 > script.size)
 			return false;
 		
-		override_stack.push(script.code.position);
+		override_stack.push(script.code.tell());
 		return true;
 	}
 	
@@ -146,7 +147,7 @@ class SCUMMThread
 	
 	public function doOverride() : Bool
 	{
-		script.code.position = override_stack.pop();
+		script.code.seek(override_stack.pop(), SeekBegin);
 		return true;
 	}
 	
@@ -155,7 +156,7 @@ class SCUMMThread
 		var r: SPUTMState;
 		var op: Int;
 		
-		op = script.code.readUnsignedByte();
+		op = script.code.readInt8();
 		
 		//if (op > 0x5E)
 		//  trace("Execing opcode " + op);
@@ -171,23 +172,31 @@ class SCUMMThread
 		
 		if (return_state == SPUTM_ERROR)
 		{
-			trace("Error execing opcode " + op + " in script " + script.id);
+			trace("Error execing opcode " + op + " in script " + script.id + " @ " + ptr);
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
+			trace(script.code.readInt8());
 		}
 	}
 	
 	public function readByte() : Int
 	{
-		return script.code.readUnsignedByte();
+		return script.code.readInt8();
 	}
 	
 	public function readShort() : Int
 	{
-		return script.code.readUnsignedShort();
+		return script.code.readUInt16();
 	}
 	
 	public function readShortSigned() : Int
 	{
-		return script.code.readShort();
+		return script.code.readInt16();
 	}
 	
 	/*
@@ -204,29 +213,29 @@ class SCUMMThread
   
 	public function getStrLen() : Int
 	{
-		var oldPos: Int = script.code.position;
+		var oldPos: Int = script.code.tell();
 		var cur: Int = -1;
 		
-		while (script.code.bytesAvailable != 0)
+		while ((script.size - script.code.tell()) != 0)
 		{
-			cur = script.code.readUnsignedByte();
+			cur = script.code.readInt8();
 			
 			if (cur == 0)
 				break;
 			
 			if (cur == 0xFF)
 			{
-				var type: Int = script.code.readUnsignedByte();
+				var type: Int = script.code.readInt8();
 				//script.code.readByte();
 				if ((type < 1 || type > 3) && type != 8)
 				{
-					script.code.readShort(); // len += 2
+					script.code.readUInt16(); // len += 2
 				}
 			}
 		}
   
-		cur = script.code.position - oldPos;
-		script.code.position = oldPos;
+		cur = script.code.tell() - oldPos;
+		script.code.seek(oldPos, SeekBegin);
 		
 		return cur-1;
 	}
@@ -235,7 +244,7 @@ class SCUMMThread
 	{
 		var i: Int = 0;
 		
-		script.code.position = ptr;
+		script.code.seek(ptr, SeekBegin);
 		return_state = SPUTM_NONE;
 		
 		while (state == THREAD_RUNNING &&
@@ -250,7 +259,7 @@ class SCUMMThread
 			//{
 			//	op_start = ptr;
 				
-				if (script.code.bytesAvailable == 0)
+				if (script.code.tell() >= script.size)
 				{
 					trace("End of script, abort!");
 					return SPUTM_ERROR;
@@ -267,7 +276,7 @@ class SCUMMThread
 			//break;
 		}
 		
-		ptr = script.code.position;
+		ptr = script.code.tell();
 		
 		return return_state;
 	}
@@ -609,7 +618,8 @@ class SCUMMThread
 class SCUMMScript
 {
 	public var id: Int;
-	public var code: ByteArray;
+	public var code: MemoryIO;
+	public var size: Int;
 	
 	public function new(num: Int)
 	{
@@ -627,31 +637,25 @@ class SCUMMScriptFactory extends SPUTMResourceFactory
 		name = "SCRIPT";
 	}
 	
-	public function load(idx: Int, reader: ByteArray) : Dynamic
+	public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the bytecode from the offset
+		var chunkID: Int32 = Int32.read(reader, true);
+		var chunkSize: Int = Int32.toInt(Int32.read(reader, true));
 		
-		reader.endian = "bigEndian";
-		var chunkID: Int = reader.readInt();
-		var chunkSize: Int = reader.readInt();
-		reader.endian = "littleEndian";
-		
-		if (chunkID != SPUTM.SCRP)
+		if (SPUTMResourceChunk.identify(chunkID) != CHUNK_SCRP)
 		{
-			trace("Bad script block (" + chunkID + ", " + String.fromCharCode(chunkID >> 24) +
-		       String.fromCharCode((chunkID >> 16) & 0xFF) +
-		       String.fromCharCode((chunkID >> 8) & 0xFF) +
-		       String.fromCharCode(chunkID & 0xFF) + " )");
+			trace("Bad script block (" + ChunkReader.chunkIDToStr(chunkID) + " )");
 			return null;
 		}
 		
 		var instance: SCUMMScript = new SCUMMScript(idx);
 		
-		instance.code = new ByteArray();
-		instance.code.endian = "littleEndian";
-		instance.code.length = chunkSize - 8;
+		instance.code = new MemoryIO();
+		instance.code.prepare(chunkSize - 8);
 		
-		reader.readBytes(instance.code, 0, instance.code.length);
+		instance.code.writeInput(reader);
+		instance.size = chunkSize - 8;
 		
 		return instance;
 	}

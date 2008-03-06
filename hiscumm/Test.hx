@@ -6,13 +6,12 @@ hiscumm
 */
 
 #if flash9
-import flash.utils.ByteArray;
 import flash.net.URLLoader;
 import flash.net.URLLoaderDataFormat;
 import flash.net.URLRequest;
-#else neko
-import noflash.ByteArray;
 #end
+
+import hiscumm.Common;
 
 import hiscumm.SPUTM;
 
@@ -30,15 +29,14 @@ class Test
 	private static var loadQueue: List<String>;
 
 	public static var engine: SPUTM;
-	public static var resources: Array<ByteArray>;
+	public static var resources: Array<ResourceIO>;
 
 	static function swfLoaded(e: flash.events.Event) 
 	{
 		var bytes: ByteArray = cast(loader.data, ByteArray);
-		bytes.endian = "littleEndian";
 
-		trace("Loaded file of " + bytes.length + " length!"); 
-		resources[resources.length] = bytes;
+		//trace("Loaded file of " + bytes.length + " length!"); 
+		resources[resources.length] = new ResourceIO(bytes);
 
 		process_loadQueue();
 	}
@@ -57,7 +55,7 @@ class Test
 		
 		initSPUTM();
 		
-		trace("Initialization complete");
+		//trace("Initialization complete");
 	}
 
 	static function initSPUTM()
@@ -70,7 +68,7 @@ class Test
 
 	static function main() {
       loader = new URLLoader();
-		resources = new Array<ByteArray>();
+		resources = new Array<ResourceIO>();
 		loadQueue = new List<String>();
 
 		loadQueue.push("scummc.001");

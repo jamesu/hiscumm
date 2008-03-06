@@ -36,20 +36,15 @@ class SPUTMCostumeFactory extends SPUTMResourceFactory
 		name = "COSTUME";
 	}
 
-	public function load(idx: Int, reader: ByteArray) : Dynamic
+	public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the costume from the offset
-		reader.endian = "bigEndian";
-		var chunkID: Int = reader.readInt();
-		var chunkSize: Int = reader.readInt();
-		reader.endian = "littleEndian";
+		var chunkID: Int32 = Int32.read(reader, true);
+		var chunkSize: Int = Int32.toInt(Int32.read(reader, true));
 		
-		if (chunkID != SPUTM.COST)
+		if (SPUTMResourceChunk.identify(chunkID) != CHUNK_COST)
 		{
-			trace("Bad costume block (" + chunkID + ", " + String.fromCharCode(chunkID >> 24) +
-		       String.fromCharCode((chunkID >> 16) & 0xFF) +
-		       String.fromCharCode((chunkID >> 8) & 0xFF) +
-		       String.fromCharCode(chunkID & 0xFF) + " )");
+			trace("Bad costume block (" + ChunkReader.chunkIDToStr(chunkID) + " )");
 			return null;
 		}
 		

@@ -8,6 +8,7 @@ Portions derived from code Copyright (C) 2004-2006 Alban Bedel
 */
 
 import hiscumm.Common;
+import utils.Seekable;
 
 import hiscumm.SCUMM;
 import hiscumm.SPUTMResource;
@@ -22,13 +23,14 @@ import hiscumm.SPUTMCostume;
 	drawing, and everything related is handled here.
 */
 
-class SPUTMPalette extends ByteArray 
+class SPUTMPalette extends MemoryIO 
 {
-	public function new(data: ByteArray) 
+	public function new(data: Input) 
 	{
 		super();
-		length = 256*3;
-		data.readBytes(this, 0, length);
+		prepare(256*3);
+		writeInput(data);
+		seek(0, SeekBegin);
 	}
 }
 
@@ -66,13 +68,13 @@ class SPUTMDisplayPalette
 		var g: Int;
 		var b: Int;
 		
-		palette.position = 0;
+		palette.seek(0, SeekBegin);
 		
 		for (i in 0...256)
 		{
-			r = palette.readUnsignedByte();
-			g = palette.readUnsignedByte();
-			b = palette.readUnsignedByte();
+			r = palette.readInt8();
+			g = palette.readInt8();
+			b = palette.readInt8();
 			
 			list[i] = (r << 16) | (g << 8) | b;
 			
@@ -209,35 +211,9 @@ enum SPUTMState
 	SPUTM_OK;
 }
 
-#if flash
-typedef BitInt = Int;
-#else js
-typedef BitInt = Int;
-#else neko
-typedef BitInt = neko.Int32;
-#end
-
 class SPUTM
 {
 	public static var instance: SPUTM = null;
-	
-	// Index chunks
-	public static inline var RNAM: Int32 = Int32.make(0x524E, 0x414D);
-	public static inline var MAXS: Int32 = Int32.make(0x4D41, 0x5853);
-	public static inline var DROO: Int32 = Int32.make(0x4452, 0x4F4F);
-	public static inline var DSCR: Int32 = Int32.make(0x4453, 0x4352);
-	public static inline var DSOU: Int32 = Int32.make(0x4453, 0x4F55);
-	public static inline var DCOS: Int32 = Int32.make(0x4443, 0x4F53);
-	public static inline var DCHR: Int32 = Int32.make(0x4443, 0x4852);
-	public static inline var DOBJ: Int32 = Int32.make(0x444F, 0x424A);
-	public static inline var AARY: Int32 = Int32.make(0x4141, 0x5259);
-
-	// Resource chunks
-	public static inline var LECF: Int32 = Int32.make(0x4C45, 0x4346);
-	public static inline var LOFF: Int32 = Int32.make(0x4C4F, 0x4646);
-	public static inline var SCRP: Int32 = Int32.make(0x5343, 0x5250);
-	static public inline var COST: Int32 = Int32.make(0x434F, 0x5354);
-	public static inline var ROOM: Int32 = Int32.make(0x524F, 0x4F4D);
 
 	// Resource types
 	public static inline var RES_SCRIPT: Int = 0;
@@ -397,7 +373,7 @@ class SPUTM
 	// Memory
 	private var vm_vars: Array<Int>;
 	private var num_bitvars: Int;
-	private var vm_bitvars: Array<BitInt>;
+	private var vm_bitvars: Array<Int32>;
 	public var vm_array: Array<SPUTMArray>;
 	private var vm_actors: Array<SPUTMActor>;
 	private var vm_room: SPUTMRoom;
@@ -411,7 +387,7 @@ class SPUTM
 
 	public var vm_res: Array<SPUTMResourceList>;
 
-	public var vm_files: Array<ByteArray>;
+	public var vm_files: Array<ResourceIO>;
 	
 	public var vm_current_actor: SPUTMActor;
 	
@@ -433,13 +409,13 @@ class SPUTM
 	
 	private var view_palette: SPUTMDisplayPalette;
 	
-	public function new(resources: Array<ByteArray>)
+	public function new(resources: Array<ResourceIO>)
 	{
 	   instance = this;
 		
 		// Read index
-		var index: ChunkReader = new ChunkReader(resources[0], -1);
-		var reader: ByteArray = resources[0];
+		var index: ChunkReader = new ChunkReader(resources[0]);
+		var reader: ResourceIO = resources[0];
 		var size: Int = 0;
 		var i: Int;
 
@@ -458,15 +434,15 @@ class SPUTM
 		
 		while (index.nextChunk())
 		{
-			switch(index.chunkID)
+			switch(SPUTMResourceChunk.identify(index.chunkID))
 			{
-				case RNAM:
-					trace("Room Names");
-				case MAXS:
-					trace("Maximum Values");
+				case CHUNK_RNAM:
+					//trace("Room Names");
+				case CHUNK_MAXS:
+					//trace("Maximum Values");
 
 					// Number of vars
-					size = reader.readShort();
+					size = reader.readUInt16();
 					vm_vars = new Array<Int>();
 					vm_vars[size-1] = 0;
 					for (i in 0...vm_vars.length)
@@ -476,80 +452,70 @@ class SPUTM
 					initVars();
 
 					// Unknown
-					reader.readShort();
+					reader.readUInt16();
 
 					// Bit vars
-					size = (reader.readShort()+7) & -8; // ~7
+					//size = Int32.toInt(Int32.and(Int32.ofInt(reader.readUInt16()+7),
+					//                   Int32.complement(Int32.ofInt(7))
+					//                  ));
+					                  
+					size = (reader.readUInt16()+31) & -32; // ~31
 					
 					num_bitvars = size;
-					vm_bitvars = new Array<BitInt>();
-					#if flash9
-					vm_bitvars[(size>>5)-1] = 0;
+					vm_bitvars = new Array<Int32>();
+					vm_bitvars[(size>>5)-1] = Int32.ofInt(0);
 					for (i in 0...size>>5)
 					{
-						vm_bitvars[i] = 0;
+						vm_bitvars[i] = Int32.ofInt(0);
 					}
-					#else js
-					vm_bitvars[(size>>5)-1] = 0;
-					for (i in 0...size>>5)
-					{
-						vm_bitvars[i] = 0;
-					}
-					#else neko
-					vm_bitvars[(size>>5)-1] = neko.Int32.ofInt(0);
-					for (i in 0...size>>5)
-					{
-						vm_bitvars[i] = neko.Int32.ofInt(0);
-					}
-					#end
 
 					// Local objects
-					vm_num_localobject = reader.readShort();
+					vm_num_localobject = reader.readUInt16();
 
 					// Arrays
-					size = reader.readShort();
+					size = reader.readUInt16();
 					vm_array = new Array<SPUTMArray>();
 					vm_array[size-1] = null;
 
 					// Unknown
-					reader.readShort();
+					reader.readUInt16();
 
 					// Verbs
-					size = reader.readShort();
+					size = reader.readUInt16();
 
 					// FL Objects
-					size = reader.readShort();
+					size = reader.readUInt16();
 
 					// Inventory
-					size = reader.readShort();
+					size = reader.readUInt16();
 
 					vm_res = new Array<SPUTMResourceList>();
 
 					// Rooms
-					vm_res[RES_ROOM] = new SPUTMResourceList(reader.readShort(), new SPUTMRoomFactory());
+					vm_res[RES_ROOM] = new SPUTMResourceList(reader.readUInt16(), new SPUTMRoomFactory());
 
 					// Scripts
-					vm_res[RES_SCRIPT] = new SPUTMResourceList(reader.readShort(), new SCUMMScriptFactory());
+					vm_res[RES_SCRIPT] = new SPUTMResourceList(reader.readUInt16(), new SCUMMScriptFactory());
 					
 					// Sounds
-					vm_res[RES_SOUND] = new SPUTMResourceList(reader.readShort(), new SPUTMSoundFactory());
+					vm_res[RES_SOUND] = new SPUTMResourceList(reader.readUInt16(), new SPUTMSoundFactory());
 
 					// Charsets
-					vm_res[RES_CHARSET] = new SPUTMResourceList(reader.readShort(), new SPUTMCharsetFactory());
+					vm_res[RES_CHARSET] = new SPUTMResourceList(reader.readUInt16(), new SPUTMCharsetFactory());
 
 					// Costumes
-					vm_res[RES_COSTUME] = new SPUTMResourceList(reader.readShort(), new SPUTMCostumeFactory());
+					vm_res[RES_COSTUME] = new SPUTMResourceList(reader.readUInt16(), new SPUTMCostumeFactory());
 
 					// Objects
-					vm_res[RES_OBJECT] = new SPUTMResourceList(reader.readShort(), null);
+					vm_res[RES_OBJECT] = new SPUTMResourceList(reader.readUInt16(), null);
 					
-					trace("done lists");
-				case DROO:
-					trace("Room objects index");
+					//trace("done lists");
+				case CHUNK_DROO:
+					//trace("Room objects index");
 
 					var rooms: Array<SPUTMResource> = vm_res[RES_ROOM].res;
 					var nfiles = 0;
-					size = reader.readShort();
+					size = reader.readUInt16();
 					
 					if (size != rooms.length)
 					{
@@ -557,16 +523,16 @@ class SPUTM
 						return;
 					}
 					
-					trace("There are " + size + " rooms.");
+					//trace("There are " + size + " rooms.");
 
 					for (i in 0...size)
 					{
 						var res: SPUTMResource = new SPUTMResource();
 						rooms[i] = res;
-						res.file = reader.readByte();
+						res.file = reader.readInt8();
 						res.room = i;
 						nfiles = res.file > nfiles ? res.file : nfiles;
-						trace(i + " @ file " + res.file);
+						//trace(i + " @ file " + res.file);
 					}
 
 					if (nfiles > vm_files.length)
@@ -574,45 +540,45 @@ class SPUTM
 						trace("Warning: files missing! (" + nfiles + " referenced, " + vm_files.length + " avail)");
 					}
 
-					trace("Loading " + vm_files.length + " files");
+					//trace("Loading " + vm_files.length + " files");
 					
 					for (i in 0...size)
 					{
-						rooms[i].offset = reader.readInt();
+						rooms[i].offset = reader.readUInt32();
 					}
 
 					// Read LOFF in resource files
 					for (i in 1...vm_files.length)
 					{
-						trace("Loading offsets [" + i + "]");
+						//trace("Loading offsets [" + i + "]");
 						loadResourceOffsets(resources[i]);
 					}
 					
-				case DSCR:
-					trace("Scripts");
+				case CHUNK_DSCR:
+					//trace("Scripts");
 					vm_res[RES_SCRIPT].loadResourceIndexes(reader);
-				case DSOU:
-					trace("Sounds");
+				case CHUNK_DSOU:
+					//trace("Sounds");
 					vm_res[RES_SOUND].loadResourceIndexes(reader);
-				case DCOS:
-					trace("Costumes");
+				case CHUNK_DCOS:
+					//trace("Costumes");
 					vm_res[RES_COSTUME].loadResourceIndexes(reader);
-				case DCHR:
-					trace("Characters");
+				case CHUNK_DCHR:
+					//trace("Characters");
 					vm_res[RES_CHARSET].loadResourceIndexes(reader);
-				case DOBJ:
-					trace("Objects");
+				case CHUNK_DOBJ:
+					//trace("Objects");
 					vm_res[RES_OBJECT].loadResourceIndexesAlt(reader);
-				case AARY:
-					trace("Arrays");
+				case CHUNK_AARY:
+					//trace("Arrays");
 					// Pre-init arrays
 
-					size = reader.readShort();
+					size = reader.readUInt16();
 					while (size != 0)
 					{
-						var dim1: Int = reader.readShort();
-						var dim2: Int = reader.readShort();
-						var atype: SPUTMArrayType = SPUTMArray.toArrayType(reader.readShort());
+						var dim1: Int = reader.readUInt16();
+						var dim2: Int = reader.readUInt16();
+						var atype: SPUTMArrayType = SPUTMArray.toArrayType(reader.readUInt16());
 						writeVar(size, defineArray(atype, dim1, dim2), null);
 					}
 				default:
@@ -642,39 +608,39 @@ class SPUTM
 		view.bitmapData = view_data;
 	}
 
-	private function loadResourceOffsets(reader: ByteArray)
+	private function loadResourceOffsets(reader: ResourceIO)
 	{
-		var resource: ChunkReader = new ChunkReader(reader, -1);
+		var resource: ChunkReader = new ChunkReader(reader);
 		resource.nextChunk();
-		if (resource.chunkID != LECF)
+		if (SPUTMResourceChunk.identify(resource.chunkID) != CHUNK_LECF)
 		{
-			trace("Invalid resource file (got " + resource.chunkID + ")");
+			trace("Invalid resource file (got " + resource.chunkName() + ")");
 			return false;
 		}
+		resource.reset();
 
-		resource = resource.nest();
 		resource.nextChunk();
-		if (resource.chunkID != LOFF)
+		if (SPUTMResourceChunk.identify(resource.chunkID) != CHUNK_LOFF)
 		{
-			trace("Invalid resource file (got " + resource.chunkID + ")");
+			trace("Invalid resource file (got " + resource.chunkName() + ")");
 			return false;
 		}
 
 		var rooms = vm_res[RES_ROOM].res;
 		var i: Int;
-		var num = reader.readByte();
+		var num = reader.readInt8();
 		for (i in 0...num)
 		{
-			var room_no = reader.readByte();
+			var room_no = reader.readInt8();
 			if (room_no > rooms.length)
 			{
 				trace("Bad room number? (" + room_no + ")");
 				return false;
 			}
-			rooms[room_no].offset = reader.readInt();
+			rooms[room_no].offset = reader.readUInt32();
 		}
 		
-		trace("Loaded " + num + " room offsets");
+		//trace("Loaded " + num + " room offsets");
 
 		return true;
 	}
@@ -764,15 +730,9 @@ class SPUTM
 				return 0;
 			}
 			
-			#if flash9
-			return (vm_bitvars[idx>>5]>>(idx&31)) & 1;
-			#else js
-			return (vm_bitvars[idx>>5]>>(idx&31)) & 1;
-			#else neko
-			return neko.Int32.toInt(
-				neko.Int32.and(neko.Int32.shr(vm_bitvars[idx>>5], idx&31), neko.Int32.ofInt(1))
+			return Int32.toInt(
+				Int32.and(Int32.shr(vm_bitvars[idx>>5], idx&31), Int32.ofInt(1))
 			);
-			#end
 		}
 		else if ((addr & 0x4000) > 0) // local var
 		{
@@ -820,21 +780,16 @@ class SPUTM
 				return;
 			}
 			
-			#if flash
-			vm_bitvars[idx>>5] &= ~(1 << (idx & 31)); // clear
-			vm_bitvars[idx>>5] |= (value & 1) << (idx & 31); // set new
-			#else js
-			vm_bitvars[idx>>5] &= ~(1 << (idx & 31)); // clear
-			vm_bitvars[idx>>5] |= (value & 1) << (idx & 31); // set new
-			#else neko
-			vm_bitvars[idx>>5] = neko.Int32.and(vm_bitvars[idx>>5], 
-			                                    neko.Int32.complement(
-			                                      neko.Int32.shl(neko.Int32.ofInt(1), idx & 31)
+			//vm_bitvars[idx>>5] &= ~(1 << (idx & 31)); // clear
+			//vm_bitvars[idx>>5] |= (value & 1) << (idx & 31); // set new
+			
+			vm_bitvars[idx>>5] = Int32.and(vm_bitvars[idx>>5], 
+			                                    Int32.complement(
+			                                      Int32.shl(Int32.ofInt(1), idx & 31)
 			                                    )); // clear
-			vm_bitvars[idx>>5] = neko.Int32.or(vm_bitvars[idx>>5], 
-			                                   neko.Int32.ofInt((value & 1) << (idx & 31))
+			vm_bitvars[idx>>5] = Int32.or(vm_bitvars[idx>>5], 
+			                                   Int32.ofInt((value & 1) << (idx & 31))
 			                                   ); // set new
-			#end
 		}
 		else if ((addr & 0x4000) > 0) // local var
 		{
@@ -1052,8 +1007,6 @@ class SPUTM
 		lastTime = getTimer();
 		time.addEventListener(TimerEvent.TIMER, onTime);
 		
-		trace("run timer created");
-		
 		time.start();
 	}
 	
@@ -1101,9 +1054,9 @@ class SPUTM
 			#else js
 			view_flags &= ~VIEW_PALETTE_CHANGED;
 			#else neko
-			view_flags = neko.Int32.toInt(
-			                              neko.Int32.and(neko.Int32.ofInt(view_flags),
-			                              neko.Int32.complement(neko.Int32.ofInt(VIEW_PALETTE_CHANGED))
+			view_flags = Int32.toInt(
+			                              Int32.and(Int32.ofInt(view_flags),
+			                              Int32.complement(Int32.ofInt(VIEW_PALETTE_CHANGED))
 			                              ));
 			#end
 		}

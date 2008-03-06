@@ -771,7 +771,7 @@ class SCUMM6
 		if (subOp == 0x65) // ignore sounds
 			return;
 		
-		trace(subOp + ', ' + thread.script.code.position);
+		trace(subOp + ', ' + thread.script.code.tell());
 		
 		if (subOp >= 0x64 && subOp <= 0x67)
 		{
@@ -1129,7 +1129,7 @@ class SCUMM6
 			case 125: // SO_VERB_NAME
 				// loadPtrToResource
 				a = thread.getStrLen();
-				trace("len=" + a);
+				//trace("len=" + a);
 				thread.jumpRel(a+1);
 			case 126: // SO_VERB_COLOR
 				vm_stack.pop();

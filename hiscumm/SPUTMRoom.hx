@@ -8,6 +8,7 @@ Portions derived from code Copyright (C) 2004-2006 Alban Bedel
 */
 
 import hiscumm.Common;
+import utils.Seekable;
 
 import hiscumm.SCUMM;
 import hiscumm.SPUTM;
@@ -21,27 +22,7 @@ import hiscumm.SPUTMResource;
 */
 
 class SPUTMRoom
-{
-	static public var RMHD: Int32 = Int32.make(0x524D, 0x4844);
-	static public var CYCL: Int32 = Int32.make(0x4359, 0x434C);
-	static public var TRNS: Int32 = Int32.make(0x5452, 0x4E53);
-	static public var PALS: Int32 = Int32.make(0x5041, 0x4C53);
-	static public var RMIM: Int32 = Int32.make(0x524D, 0x494D);
-	static public var OBIM: Int32 = Int32.make(0x4F42, 0x494D);
-	static public var OBCD: Int32 = Int32.make(0x4F42, 0x4344);
-	static public var EXCD: Int32 = Int32.make(0x4558, 0x4344);
-	static public var ENCD: Int32 = Int32.make(0x454E, 0x4344);
-	static public var NLSC: Int32 = Int32.make(0x4E4C, 0x5343);
-	static public var LSCR: Int32 = Int32.make(0x4C53, 0x4352);
-	static public var BOXD: Int32 = Int32.make(0x424F, 0x5844);
-	static public var BOXM: Int32 = Int32.make(0x424F, 0x584D);
-	static public var SCAL: Int32 = Int32.make(0x5343, 0x414C);
-	static public var IM00: Int32 = Int32.make(0x494D, 0x3030);
-	
-	static public var WRAP: Int32 = Int32.make(0x5752, 0x4150);
-	static public var OFFS: Int32 = Int32.make(0x4F46, 0x4653);
-	static public var APAL: Int32 = Int32.make(0x4150, 0x414C);
-	
+{	
 	public var id: Int;
 	public var scripts: Array<SCUMMScript>;
 	public var objects: Array<Dynamic>;
@@ -81,74 +62,65 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 		name = "ROOM";
 	}
 
-	public function load(idx: Int, reader: ByteArray) : Dynamic
+	public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the bytecode from the offset
 		
-		reader.endian = "bigEndian";
-		var chunkID: Int = reader.readUnsignedInt();
-		var chunkSize: Int = reader.readUnsignedInt();
-		reader.endian = "littleEndian";
+		var chunkID: Int32 = Int32.read(reader, true);
+		var chunkSize: Int = Int32.toInt(Int32.read(reader, true));
 		
-		if (chunkID != SPUTM.ROOM)
+		if (SPUTMResourceChunk.identify(chunkID) != CHUNK_ROOM)
 		{
-			trace("Bad room block (" + chunkID + ", " + String.fromCharCode(chunkID >> 24) +
-		       String.fromCharCode((chunkID >> 16) & 0xFF) +
-		       String.fromCharCode((chunkID >> 8) & 0xFF) +
-		       String.fromCharCode(chunkID & 0xFF) + " )");
+			trace("Bad room block (" + ChunkReader.chunkIDToStr(chunkID) + ")");
 			return null;
 		}
 		
 		var room: SPUTMRoom = new SPUTMRoom(idx);
-		var croom: ChunkReader = new ChunkReader(reader, reader.position + chunkSize - 8);
+		var croom: ChunkReader = new ChunkReader(reader);
 		var num: Int;
 		var num_lscr: Int = 0;
 		var i: Int;
 		var base_ptr: Int;
 		var num_pal: Int;
-		croom.chunkOffs = reader.position;
 		
 		while (croom.nextChunk())
 		{
-			switch (croom.chunkID)
+			switch (SPUTMResourceChunk.identify(croom.chunkID))
 			{
-				case SPUTMRoom.RMHD:
+				case CHUNK_RMHD:
 					//trace("RMHD == " + croom.chunkName());
-					room.width = reader.readShort();
-					room.height = reader.readShort();
-					num = reader.readShort();
+					room.width = reader.readUInt16();
+					room.height = reader.readUInt16();
+					num = reader.readUInt16();
 					if (num > 0)
 						room.objects[num-1] = null;
-				case SPUTMRoom.CYCL:
+				case CHUNK_CYCL:
 					//trace("CYCL == " + croom.chunkName());
-				case SPUTMRoom.TRNS:
+				case CHUNK_TRNS:
 					//trace("TRNS == " + croom.chunkName());
-				case SPUTMRoom.PALS:
+				case CHUNK_PALS:
 					//trace("PALS == " + croom.chunkName());
 
-					reader.endian = "bigEndian";
-					chunkID = reader.readUnsignedInt();
-					chunkSize = reader.readUnsignedInt();
+					chunkID = Int32.read(reader, true);
+					chunkSize = Int32.toInt(Int32.read(reader, true));
 					
-					if (chunkID != SPUTMRoom.WRAP)
+					if (SPUTMResourceChunk.identify(chunkID) != CHUNK_WRAP)
 					{
 						trace("Bad room WRAP block " + chunkID);
-						reader.endian = "littleEndian";
 						return null;
 					}
 					
-					chunkID = reader.readUnsignedInt();
-					chunkSize = reader.readUnsignedInt();
-					reader.endian = "littleEndian";
+					chunkID = Int32.read(reader, true);
+					chunkSize = Int32.toInt(Int32.read(reader, true));
 					
-					if (chunkID != SPUTMRoom.OFFS)
+					if (SPUTMResourceChunk.identify(chunkID) != CHUNK_OFFS)
 					{
 						trace("Bad room OFFS block " + chunkID);
 						return null;
 					}
 					
 					// Now we can load in the palette!
-					base_ptr = reader.position-8;
+					base_ptr = reader.tell()-8;
 					num_pal = Math.round((chunkSize - 8) / 4);
 					
 					var offset: Array<Int> = new Array<Int>();
@@ -157,48 +129,39 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 						offset[num_pal-1] = 0;
 						for (i in 0...num_pal)
 						{
-							offset[i] = base_ptr + reader.readUnsignedInt();
+							offset[i] = base_ptr + reader.readUInt32();
 						}
-						
-						reader.endian = "bigEndian";
 						
 						room.palettes[num_pal - 1] = null;
 						for (i in 0...num_pal)
 						{
-							reader.position = offset[i];
+							reader.seek(offset[i], SeekBegin);
 							
-							chunkID = reader.readUnsignedInt();
-							chunkSize = reader.readUnsignedInt();
+							chunkID = Int32.read(reader, true);
+							chunkSize = Int32.toInt(Int32.read(reader, true));
 							
-							if (chunkID != SPUTMRoom.APAL)
+							if (SPUTMResourceChunk.identify(chunkID) != CHUNK_APAL)
 							{
 								trace("Bad room APAL block " + chunkID);
-								reader.endian = "littleEndian";
 								return null;
 							}
 							
 							room.palettes[i] = new SPUTMPalette(reader);
 						}
-						
-						reader.endian = "littleEndian";
 					}
       
-				case SPUTMRoom.RMIM:
+				case CHUNK_RMIM:
 					trace("RMIM == " + croom.chunkName());
 					
-					reader.endian = "bigEndian";
-					chunkID = reader.readUnsignedInt();
-					chunkSize = reader.readUnsignedInt();
-					reader.endian = "littleEndian";
+					chunkID = Int32.read(reader, true);
+					chunkSize = Int32.toInt(Int32.read(reader, true));
 					
-					room.num_zplane = reader.readUnsignedShort();
+					room.num_zplane = reader.readUInt16();
 					
-					reader.endian = "bigEndian";
-					chunkID = reader.readUnsignedInt();
-					chunkSize = reader.readUnsignedInt();
-					reader.endian = "littleEndian";
+					chunkID = Int32.read(reader, true);
+					chunkSize = Int32.toInt(Int32.read(reader, true));
 					
-					if (chunkID != SPUTMRoom.IM00)
+					if (SPUTMResourceChunk.identify(chunkID) != CHUNK_IM00)
 					{
 						trace("Bad room image block " + chunkID);
 						return null;
@@ -213,42 +176,42 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 					}
 					
 					trace("Room image appears to have loaded!");
-				case SPUTMRoom.OBIM:
+				case CHUNK_OBIM:
 					//trace("OBIM == " + croom.chunkName());
 					
 					// Object images
-				case SPUTMRoom.OBCD:
+				case CHUNK_OBCD:
 					//trace("OBCD == " + croom.chunkName());
 					
 					// Object verb info, etc
-				case SPUTMRoom.EXCD:
+				case CHUNK_EXCD:
 					//trace("EXCD == " + croom.chunkName());
 					
 					var script: SCUMMScript = new SCUMMScript(0x1ECD0000);
-					script.code = new ByteArray();
-					script.code.endian = "littleEndian";
-					script.code.length = croom.chunkSize - 8;
+					script.code = new MemoryIO();
+					script.size = croom.chunkSize - 8;
+					script.code.prepare(script.size);
 					
-					reader.readBytes(script.code, 0, script.code.length);
+					script.code.writeInput(reader);
 					
 					room.exit = script;
-				case SPUTMRoom.ENCD:
+				case CHUNK_ENCD:
 					//trace("ENCD == " + croom.chunkName());
 					
 					var script: SCUMMScript = new SCUMMScript(0x0ECD0000);
-					script.code = new ByteArray();
-					script.code.endian = "littleEndian";
-					script.code.length = croom.chunkSize - 8; 
+					script.code = new MemoryIO();
+					script.size = croom.chunkSize - 8;
+					script.code.prepare(script.size);
 					
-					reader.readBytes(script.code, 0, script.code.length);
+					script.code.writeInput(reader);
 					
 					room.entry = script;
-				case SPUTMRoom.NLSC:
+				case CHUNK_NLSC:
 					//trace("NLSC == " + croom.chunkName());
-					num = reader.readShort();
+					num = reader.readUInt16();
 					if (num > 0)
 						room.scripts[num-1] = null;
-				case SPUTMRoom.LSCR:
+				case CHUNK_LSCR:
 					//trace("LSCR == " + croom.chunkName());
 					
 					if (num_lscr >= room.scripts.length)
@@ -257,7 +220,7 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 						return null;
 					}
 					
-					i = reader.readUnsignedByte();
+					i = reader.readInt8();
 					if (i < 200 || i-200 >= room.scripts.length)
 					{
 						trace("Invalid script id " + i);
@@ -265,21 +228,21 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 					}
 					
 					var script: SCUMMScript = new SCUMMScript(i+200);
-					script.code = new ByteArray();
-					script.code.endian = "littleEndian";
-					script.code.length = croom.chunkSize - 9;
+					script.code = new MemoryIO();
+					script.size = croom.chunkSize - 9;
+					script.code.prepare(script.size);
 					
 					trace("Read local script " + i); 
 					
-					reader.readBytes(script.code, 0, script.code.length);
+					script.code.writeInput(reader);
 					
 					room.scripts[i] = script;
 					num_lscr++;
-				case SPUTMRoom.BOXD:
+				case CHUNK_BOXD:
 					//trace("BOXD == " + croom.chunkName());
-				case SPUTMRoom.BOXM:
+				case CHUNK_BOXM:
 					//trace("BOXM == " + croom.chunkName());
-				case SPUTMRoom.SCAL:
+				case CHUNK_SCAL:
 					//trace("SCAL == " + croom.chunkName());
 				default:
 					trace("Room chunk " + croom.chunkName() + " (" + croom.chunkID + ")");
