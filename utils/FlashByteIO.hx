@@ -71,7 +71,7 @@ class FlashByteIO implements Input, implements Output, implements Seekable
 	
 	public function readChar() : Int
 	{
-		return byteArray.readByte();
+		return byteArray.readUnsignedByte();
 	}
 	
 	public function readDouble() : Float
@@ -118,7 +118,7 @@ class FlashByteIO implements Input, implements Output, implements Seekable
 	
 	public function readInt8() : Int
 	{
-		return byteArray.readUnsignedByte();
+		return byteArray.readByte();
 	}
 	
 	public function readUInt16() : Int
