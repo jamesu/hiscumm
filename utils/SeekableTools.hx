@@ -6,17 +6,22 @@ hiscumm
 This program is free software; you can redistribute it and/ormodify it under the terms of the GNU General Public Licenseas published by the Free Software Foundation; either version 2of the License, or (at your option) any later version.This program is distributed in the hope that it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty ofMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theGNU General Public License for more details.You should have received a copy of the GNU General Public Licensealong with this program; if not, write to the Free SoftwareFoundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-enum Seek
+#if neko
+import neko.io.File;
+typedef ToolSeekable = Dynamic;
+#else
+import utils.Seekable;
+typedef ToolSeekable = Seekable;
+#end
+
+class SeekableTools
 {
-	SeekEnd;
-	SeekCur;
-	SeekBegin;
+	public static function getSeekableLength(s : ToolSeekable) : Int
+	{
+		var old_pos = s.tell();
+		s.seek(0, SeekEnd);
+		var new_pos = s.tell();
+		s.seek(old_pos, SeekBegin);
+		return new_pos;
+	}
 }
-
-interface Seekable
-{	
-	function seek(p : Int, pos : Seek) : Void;
-	function tell() : Int;
-}
-
-
