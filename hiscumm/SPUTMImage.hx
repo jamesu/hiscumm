@@ -71,7 +71,7 @@ class SPUTMImage
 	{
 		if (cl < 8)
 		{
-			bits |= (smap.readInt8()) << cl;
+			bits |= (smap.readChar()) << cl;
 			cl += 8;
 			dtrace("FILL_BITS cl=" + cl + ", bits=" + bits);
 		}
@@ -175,7 +175,7 @@ class SPUTMImage
 			dtrace(stripe_size + "=size, " + o + "=pos, " + offs + "=dest");
 			stripe_size--;
  			smap.seek(o, SeekBegin);
- 			type = smap.readInt8();
+ 			type = smap.readChar();
 			
 			dtrace("type=" + type + " @ " + o);
 			decomp_shr = type % 10;
@@ -262,8 +262,8 @@ class SPUTMImage
 	  
 	static public function unkDecodeA(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		var color: Int = smap.readInt8();
-		var bits: Int = 0; bits = smap.readInt8();
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
 		var cl: Int = 8;
 		var bit: Int = 0;
 		var incm: Int;
@@ -344,7 +344,7 @@ class SPUTMImage
 								}
 							
 								bits >>= 8;
-								bits |= (smap.readInt8()) << (cl-8);
+								bits |= (smap.readChar()) << (cl-8);
 							
 								continue; //goto againPos;
 							}
@@ -380,8 +380,8 @@ class SPUTMImage
 	
 	static public function unkDecodeB(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		var color: Int = smap.readInt8();
-		var bits: Int = 0; bits = smap.readInt8();
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
 		var cl: Int = 8;
 		var bit: Int = 100;
 		var inc: Int = -1;
@@ -442,8 +442,8 @@ class SPUTMImage
 	
 	static public function unkDecodeC(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		var color: Int = smap.readInt8();
-		var bits: Int = 0; bits = smap.readInt8();
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
 		var cl: Int = 8;
 		var bit: Int = 100;
 		var inc: Int = -1;

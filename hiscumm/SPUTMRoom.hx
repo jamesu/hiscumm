@@ -225,7 +225,7 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 						return null;
 					}
 					
-					i = reader.readInt8();
+					i = reader.readChar();
 					if (i < 200 || i-200 >= room.scripts.length)
 					{
 						trace("Invalid script id " + i);

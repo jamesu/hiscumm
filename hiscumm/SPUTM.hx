@@ -14,6 +14,13 @@ import neko.io.File;
 import utils.Seekable;
 #end
 
+#if flash9
+import flash.utils.Timer;
+import flash.events.TimerEvent;
+#else true
+import haxe.Timer;
+#end
+
 import hiscumm.SCUMM;
 import hiscumm.SPUTMResource;
 import hiscumm.SPUTMRoom;
@@ -76,9 +83,9 @@ class SPUTMDisplayPalette
 		
 		for (i in 0...256)
 		{
-			r = palette.readInt8();
-			g = palette.readInt8();
-			b = palette.readInt8();
+			r = palette.readChar();
+			g = palette.readChar();
+			b = palette.readChar();
 			
 			list[i] = (r << 16) | (g << 8) | b;
 			
@@ -533,7 +540,7 @@ class SPUTM
 					{
 						var res: SPUTMResource = new SPUTMResource();
 						rooms[i] = res;
-						res.file = reader.readInt8();
+						res.file = reader.readChar();
 						res.room = i;
 						nfiles = res.file > nfiles ? res.file : nfiles;
 						//trace(i + " @ file " + res.file);
@@ -632,10 +639,10 @@ class SPUTM
 
 		var rooms = vm_res[RES_ROOM].res;
 		var i: Int;
-		var num = reader.readInt8();
+		var num = reader.readChar();
 		for (i in 0...num)
 		{
-			var room_no = reader.readInt8();
+			var room_no = reader.readChar();
 			if (room_no > rooms.length)
 			{
 				trace("Bad room number? (" + room_no + ")");
@@ -1002,23 +1009,42 @@ class SPUTM
 	
 	public function getTimer() : Float
 	{
-		return 0; //return flash.Lib.getTimer();
+		#if flash9
+		return flash.Lib.getTimer();
+		#else true
+		return Timer.stamp() * 1000;
+		#end
 	}
 	
 	public function run()
 	{
-		time = new Timer(UPDATE_INTERVAL);
 		lastTime = getTimer();
+		#if flash9
+		time = new Timer(UPDATE_INTERVAL);
 		time.addEventListener(TimerEvent.TIMER, onTime);
-		
 		time.start();
+		#else !neko
+		time = new Timer(UPDATE_INTERVAL);
+		time.run = function() { SPUTM.instance.onTime(); }
+		#else true
+		while (true)
+		{
+			onTime();
+			neko.Sys.sleep(0.01);
+		}
+		#end
 	}
 	
 	public function stop()
 	{
+		#if neko
+		neko.Sys.exit(0);
+		#else true
 		time.stop();
+		#end
 	}
 	
+	#if flash9
 	public function onTime(evt: TimerEvent)
 	{
 		//trace("Update!");
@@ -1026,6 +1052,16 @@ class SPUTM
 		onTick(curTime - lastTime);
 		lastTime = curTime;
 	}
+	#else !flash9
+	public function onTime()
+	{
+		//trace("Update!");
+		curTime = Timer.stamp();
+		onTick(curTime - lastTime);
+		lastTime = curTime;
+	}
+	
+	#end
 	
 	public function onTick(ms: Float)
 	{

@@ -241,7 +241,7 @@ class SPUTMResourceList
 			resource = new SPUTMResource();
 			res[i] = resource;
 
-			resource.room = reader.readInt8();
+			resource.room = reader.readChar();
 			if (resource.room >= sputm.vm_res[SPUTM.RES_ROOM].res.length)
 			{
 			   //trace(resource.room + "," + sputm.vm_res[SPUTM.RES_ROOM].res.length);
@@ -283,7 +283,7 @@ class SPUTMResourceList
 			resource = new SPUTMResource();
 			res[i] = resource;
 
-			resource.room = reader.readInt8(); // i.e. owner | state
+			resource.room = reader.readChar(); // i.e. owner | state
 		}
 	}
 

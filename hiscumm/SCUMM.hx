@@ -161,7 +161,7 @@ class SCUMMThread
 		var r: SPUTMState;
 		var op: Int;
 		
-		op = script.code.readInt8();
+		op = script.code.readChar();
 		
 		//if (op > 0x5E)
 		//  trace("Execing opcode " + op);
@@ -191,7 +191,7 @@ class SCUMMThread
 	
 	public function readByte() : Int
 	{
-		return script.code.readInt8();
+		return script.code.readChar();
 	}
 	
 	public function readShort() : Int
@@ -223,14 +223,14 @@ class SCUMMThread
 		
 		while ((script.size - script.code.tell()) != 0)
 		{
-			cur = script.code.readInt8();
+			cur = script.code.readChar();
 			
 			if (cur == 0)
 				break;
 			
 			if (cur == 0xFF)
 			{
-				var type: Int = script.code.readInt8();
+				var type: Int = script.code.readChar();
 				//script.code.readByte();
 				if ((type < 1 || type > 3) && type != 8)
 				{
