@@ -29,8 +29,8 @@ typedef Point = noflash.Point;
 typedef Timer = noflash.Timer;
 typedef TimerEvent = noflash.TimerEvent;
 typedef Int32 = neko.Int32;
-//typedef MemoryIO = utils.FlashByteIO; TODO
-//typedef ResourceIO = neko.io.FlashByteIO; TODO
+typedef MemoryIO = utils.NekoByteIO; 
+typedef ResourceIO = neko.io.FileInput;
 typedef Input = neko.io.Input;
 typedef Output = neko.io.Output;
 #else js

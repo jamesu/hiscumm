@@ -8,7 +8,12 @@ Portions derived from code Copyright (C) 2004-2006 Alban Bedel
 */
 
 import hiscumm.Common;
+
+#if neko
+import neko.io.File;
+#else !neko
 import utils.Seekable;
+#end
 
 import hiscumm.SCUMM;
 import hiscumm.SPUTM;

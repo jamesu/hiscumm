@@ -7,7 +7,12 @@ Portions derived from code Copyright (C) 2004-2006 Alban BedelThis program is 
 */
 
 import hiscumm.Common;
+
+#if neko
+import neko.io.File;
+#else !neko
 import utils.Seekable;
+#end
 
 import hiscumm.SPUTM.SPUTMState;
 import hiscumm.SPUTMResource;

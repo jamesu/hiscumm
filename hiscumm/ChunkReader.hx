@@ -6,7 +6,11 @@ hiscumm
 */
 
 import hiscumm.Common;
+#if neko
+import neko.io.File;
+#else !neko
 import utils.Seekable;
+#end
 
 /*
 	ChunkReader
