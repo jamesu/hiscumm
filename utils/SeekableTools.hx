@@ -9,7 +9,7 @@ hiscumm
 #if neko
 import neko.io.File;
 typedef ToolSeekable = Dynamic;
-#else
+#else !neko
 import utils.Seekable;
 typedef ToolSeekable = Seekable;
 #end
