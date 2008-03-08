@@ -77,7 +77,7 @@ class NekoByteIO extends Input //, implements Output, implements Seekable
 	// Input
 
 	public function readChar() {
-		if( this.len == this.pos )
+		if( this.pos + 1 > this.len )
 			throw new Eof();
 		var c = untyped __dollar__sget(s.__s,pos);
 		pos += 1;
@@ -87,8 +87,8 @@ class NekoByteIO extends Input //, implements Output, implements Seekable
 	public function readBytes( buf : String, bpos, blen ) : Int {
 		if( (this.len == this.pos) && blen > 0 )
 			throw new Eof();
-		if( len < blen )
-			blen = len;
+		if( len < pos + blen )
+			blen = len - pos;
 		untyped __dollar__sblit(buf.__s,bpos,s.__s,pos,blen);
 		pos += blen;
 		return blen;
@@ -261,19 +261,21 @@ class NekoByteIO extends Input //, implements Output, implements Seekable
 		
 	// Output
 	
-	public function writeBytes(s : String, p : Int, len : Int) : Int
+	public function writeBytes(s : String, p : Int, blen : Int) : Int
 	{
-		if (this.pos + len > this.len)
+		if( (this.len == this.pos) && blen > 0 )
 			throw new Eof();
+		if( len < pos + blen )
+			blen = len - pos;
 		
-		neko.Lib.copyBytes(this.s, this.pos, s, p, len);
-		this.pos += len;
+		neko.Lib.copyBytes(this.s, this.pos, s, p, blen);
+		this.pos += blen;
 		return len;
 	}
 	
 	public function writeChar(c : Int) : Void
 	{
-		if (this.len == this.pos)
+		if (this.pos + 1 > this.len)
 			throw new Eof();
 		
 		neko.Lib.copyBytes(s, pos, String.fromCharCode(c), 0, 1);
