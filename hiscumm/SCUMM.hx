@@ -178,14 +178,14 @@ class SCUMMThread
 		if (return_state == SPUTM_ERROR)
 		{
 			trace("Error execing opcode " + op + " in script " + script.id + " @ " + ptr);
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
-			trace(script.code.readInt8());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
+			trace(script.code.readChar());
 		}
 	}
 	
