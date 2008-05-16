@@ -137,7 +137,7 @@ class Int32
 	static public function write(o : noneko.Output, i : Int32, ?b : Bool) : Void
 	{
 		// Copyright (c) 2005, The haXe Project Contributors
-		var low = cast Int32.and(i,cast 0xFFFF);
+		var low = cast Int32.and(i,Int32.ofInt(0xFFFF));
 		var high = cast Int32.ushr(i,16);
 		if( b ) {
 			o.writeUInt16B(high);

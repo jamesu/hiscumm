@@ -36,8 +36,8 @@ typedef BitmapData = noflash.BitmapData;
 typedef Rectangle = noflash.Rectangle;
 typedef Point = noflash.Point;
 typedef Int32 = noneko.Int32;
-//typedef MemoryIO = utils.FlashByteIO; TODO
-//typedef ResourceIO = neko.io.FlashByteIO; TODO
+typedef MemoryIO = utils.JSByteIO;
+typedef ResourceIO = utils.JSByteIO;
 typedef Input = noneko.Input;
 typedef Output = noneko.Output;
 #end
