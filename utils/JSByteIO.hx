@@ -184,10 +184,9 @@ class JSByteIO implements Input, implements Output, implements Seekable
 	
 	public function prepare(nbytes : Int) : Void
 	{
-		var end = bytes.length;
-		var i = end + nbytes - 1;
+		var i = nbytes - 1;
 		
-		while (i > end)
+		while (i >= 0)
 		{
 			bytes[i] = 0;
 			i -= 1;
