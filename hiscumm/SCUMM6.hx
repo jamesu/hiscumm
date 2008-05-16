@@ -292,7 +292,7 @@ class SCUMM6
 
 	static function decWord(engine: SPUTM, vm_stack: SCUMMStack, thread: SCUMMThread) : Void
 	{
-		var vaddr: Int = thread.readByte();
+		var vaddr: Int = thread.readShort();
 		engine.writeVar(vaddr, engine.readVar(vaddr, thread) - 1, thread);
 	}
 

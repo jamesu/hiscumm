@@ -133,7 +133,7 @@ enum SPUTMArrayType
 
 class SPUTMArray
 {
-	var atype: SPUTMArrayType;
+	public var atype: SPUTMArrayType;
 	public var dim1: Int;
 	public var dim2: Int;
 	
@@ -689,7 +689,34 @@ class SPUTM
 	public function writeArray(idx: Int, y: Int, x: Int, value: Int) : Void
 	{
 		var array: SPUTMArray = vm_array[idx];
-		array.data[x + (array.dim2*y)] = value;
+		var real_value: Int;
+		
+		// Convert to proper representation
+		switch (array.atype)
+		{
+			case ARRAY_BIT:
+				real_value = real_value & 0x1;
+
+			case ARRAY_NIBBLE:
+				real_value = real_value & 0xF;
+
+			case ARRAY_BYTE:
+				real_value = real_value & 0xFF;
+
+			case ARRAY_STRING:
+				real_value = value;
+
+			case ARRAY_INT:
+				real_value = value & 0xFFFF;
+
+			case ARRAY_DWORD:
+				real_value = value;
+
+			case ARRAY_NUM:
+				real_value = value;
+		}
+		
+		array.data[x + (array.dim2*y)] = real_value;
 	}
 
 	public function nukeArray(idx: Int)
@@ -812,7 +839,7 @@ class SPUTM
 				return;
 			}
 			
-			thread.vars[idx] = value;
+			thread.vars[idx] = value & 0xFFFF;
 		}
 		else // global var
 		{
@@ -826,13 +853,13 @@ class SPUTM
 			
 			// NOTE: scvm seems to allow for idx < 0x100 vars to be dynamically
 			// grabbed via function pointers.
-			vm_vars[idx] = value;
+			vm_vars[idx] = value & 0xFFFF;
 		}
 	}
 	
 	public function setVar(addr: Int, value: Int)
 	{
-		vm_vars[addr] = value;
+		vm_vars[addr] = value & 0xFFFF;
 	}
 	
 	public function getVar(addr: Int) : Int
@@ -842,7 +869,7 @@ class SPUTM
 	
 	public function incVar(addr: Int, value: Int) : Void
 	{
-		vm_vars[addr] += value;
+		vm_vars[addr] = (vm_vars[addr] + value) & 0xFFFF;
 	}
 	
 	public function getActor(idx: Int) : SPUTMActor
