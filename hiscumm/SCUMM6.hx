@@ -1797,12 +1797,14 @@ class SCUMM6
 
 	static function bitAND(engine: SPUTM, vm_stack: SCUMMStack, thread: SCUMMThread) : Void
 	{
-		thread.return_state = SPUTM_ERROR;
+		var a: Int = vm_stack.pop();
+		vm_stack.push(vm_stack.pop() & a);
 	}
 
 	static function bitOR(engine: SPUTM, vm_stack: SCUMMStack, thread: SCUMMThread) : Void
 	{
-		thread.return_state = SPUTM_ERROR;
+		var a: Int = vm_stack.pop();
+		vm_stack.push(vm_stack.pop() | a);
 	}
 
 	static function isRoomScriptRunning(engine: SPUTM, vm_stack: SCUMMStack, thread: SCUMMThread) : Void
