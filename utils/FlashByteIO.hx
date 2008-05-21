@@ -285,13 +285,17 @@ class FlashByteIO implements Input, implements Output, implements Seekable
 	public function writeUInt16(x : Int) : Void
 	{
 		byteArray.endian = Endian.LITTLE_ENDIAN;
-		byteArray.writeShort(x);
+		if( x < 0 || x > 0xFFFF ) throw Error.Overflow;
+		writeChar(x & 0xFF);
+		writeChar(x >> 8);
 	}
 	
 	public function writeUInt16B(x : Int) : Void
 	{
 		byteArray.endian = Endian.BIG_ENDIAN;
-		byteArray.writeShort(x);
+		if( x < 0 || x > 0xFFFF ) throw Error.Overflow;
+		writeChar(x & 0xFF);
+		writeChar(x >> 8);
 	}
 	
 	public function writeUInt24(x : Int) : Void
