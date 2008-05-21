@@ -172,7 +172,44 @@ class SPUTMArray
 	
 	public function set(y: Int, x: Int, value: Int) : Void
 	{
-		data[x + (dim2*y)] = value;
+		var real_value = value;
+		
+		// Convert to proper representation
+		switch (atype)
+		{
+			case ARRAY_BIT:
+				real_value = real_value & 0x1;
+
+			case ARRAY_NIBBLE:
+				real_value = real_value & 0xF;
+
+			case ARRAY_BYTE:
+				real_value = real_value & 0xFF;
+
+			case ARRAY_STRING:
+				real_value = value;
+
+			case ARRAY_INT:
+				real_value = SCUMMThread.varIn(value);
+
+			case ARRAY_DWORD:
+				real_value = value;
+
+			case ARRAY_NUM:
+				real_value = value;
+		}
+		
+		data[x + (dim2*y)] = real_value;
+	}
+	
+	public function get(y: Int, x: Int) : Int
+	{
+		var real_value: Int = data[x + (dim2*y)];
+		
+		if (atype == ARRAY_INT)
+			return SCUMMThread.varOut(real_value);
+		else
+			return real_value;		
 	}
 	
 	public function toString() : String
@@ -683,7 +720,7 @@ class SPUTM
 	public function readArray(idx: Int, y: Int, x: Int) : Int
 	{
 		var array: SPUTMArray = vm_array[idx];
-		return array.data[x + (array.dim2*y)];
+		return array.get(y, x);
 	}
 	
 	public function writeArray(idx: Int, y: Int, x: Int, value: Int) : Void
@@ -691,32 +728,7 @@ class SPUTM
 		var array: SPUTMArray = vm_array[idx];
 		var real_value: Int;
 		
-		// Convert to proper representation
-		switch (array.atype)
-		{
-			case ARRAY_BIT:
-				real_value = real_value & 0x1;
-
-			case ARRAY_NIBBLE:
-				real_value = real_value & 0xF;
-
-			case ARRAY_BYTE:
-				real_value = real_value & 0xFF;
-
-			case ARRAY_STRING:
-				real_value = value;
-
-			case ARRAY_INT:
-				real_value = value & 0xFFFF;
-
-			case ARRAY_DWORD:
-				real_value = value;
-
-			case ARRAY_NUM:
-				real_value = value;
-		}
-		
-		array.data[x + (array.dim2*y)] = real_value;
+		array.set(y, x, value);
 	}
 
 	public function nukeArray(idx: Int)
@@ -782,7 +794,7 @@ class SPUTM
 				return 0;
 			}
 			
-			return thread.vars[idx];
+			return SCUMMThread.varOut(thread.vars[idx]);
 		}
 		else // global var
 		{
@@ -796,14 +808,13 @@ class SPUTM
 			
 			// NOTE: scvm seems to allow for idx < 0x100 vars to be dynamically
 			// grabbed via function pointers.
-			return vm_vars[idx];
+			return SCUMMThread.varOut(vm_vars[idx]);
 		}
 	}
 	
 	public function writeVar(addr: Int, value: Int, thread: SCUMMThread)
 	{
 		//trace("writeVar @ " + addr);
-		
 		var idx: Int;
 		
 		// Decode the address
@@ -839,7 +850,7 @@ class SPUTM
 				return;
 			}
 			
-			thread.vars[idx] = value & 0xFFFF;
+			thread.vars[idx] = SCUMMThread.varIn(value);
 		}
 		else // global var
 		{
@@ -853,23 +864,23 @@ class SPUTM
 			
 			// NOTE: scvm seems to allow for idx < 0x100 vars to be dynamically
 			// grabbed via function pointers.
-			vm_vars[idx] = value & 0xFFFF;
+			vm_vars[idx] = SCUMMThread.varIn(value);
 		}
 	}
 	
 	public function setVar(addr: Int, value: Int)
 	{
-		vm_vars[addr] = value & 0xFFFF;
+		vm_vars[addr] = SCUMMThread.varIn(value);
 	}
 	
 	public function getVar(addr: Int) : Int
 	{
-		return vm_vars[addr];
+		return SCUMMThread.varOut(vm_vars[addr]);
 	}
 	
 	public function incVar(addr: Int, value: Int) : Void
 	{
-		vm_vars[addr] = (vm_vars[addr] + value) & 0xFFFF;
+		vm_vars[addr] = SCUMMThread.varIn(SCUMMThread.varOut(vm_vars[addr]) + value);
 	}
 	
 	public function getActor(idx: Int) : SPUTMActor
@@ -972,7 +983,7 @@ class SPUTM
 					}
 						
 					vm_vars[VAR_CAMERA_MIN_X] = Std.int(view_width / 2);
-					vm_vars[VAR_CAMERA_MAX_X] = room.width - vm_vars[VAR_CAMERA_MIN_X];
+					vm_vars[VAR_CAMERA_MAX_X] = SCUMMThread.varIn(room.width - vm_vars[VAR_CAMERA_MIN_X]);
 						
 					vm_vars[VAR_ROOM] = room.id;
 						
@@ -1179,6 +1190,13 @@ class SPUTM
 		if (view_palette == null)
 			return;
 			
+		// Update camera position
+		view_camera_x = SCUMMThread.varIn(vm_vars[VAR_CAMERA_POS_X]);
+		if (view_camera_x > SCUMMThread.varIn(vm_vars[VAR_CAMERA_MAX_X]))
+			view_camera_x = SCUMMThread.varIn(vm_vars[VAR_CAMERA_MAX_X]);
+		if (view_camera_x > SCUMMThread.varIn(vm_vars[VAR_CAMERA_MIN_X]))
+			view_camera_x = SCUMMThread.varIn(vm_vars[VAR_CAMERA_MIN_X]);
+		
 		//trace(view_room_start + "," + view_room_end);
 		
 		if (view_width < 320 || view_height < 200 || vm_room == null)
@@ -1209,68 +1227,14 @@ class SPUTM
 		view_data.lock();
 		view_data.fillRect(view_data.rect, 0xff000000 | BLANK_INDEX);
 		
-      var srect: Rectangle = new Rectangle(sx,
+		var srect: Rectangle = new Rectangle(sx,
                                            0,
                                            w,
                                            h);
-      var dpoint: Point = new Point(dx,
+		var dpoint: Point = new Point(dx,
                                     view_room_start);
                                                           
-      view_data.copyPixels(vm_room.image.data, srect, dpoint, null,  SPUTMDisplayPalette.NULL_POINT, false);
-  
-  /*
-  for(a = 0 ; a < vm->room->num_object ; a++) {
-    scvm_object_t* obj = vm->room->object[a];
-    scvm_image_t* img;
-    int obj_w,obj_h;
-    uint8_t *src,*dst;
-    if(!obj->pdata->state ||
-       obj->pdata->state > obj->num_image)
-      continue;
-    img = &obj->image[obj->pdata->state];
-    obj_w = obj->width;
-    obj_h = obj->height;
-    if(obj->x >= sx + vm->room->width ||
-       obj->x + obj->width < sx ||
-       obj->y >= h ||
-       obj->y + obj_h < 0)
-      continue;
-    src = img->data;
-    dst = buffer +  (view->room_start+obj->y)*stride + dx + obj->x;
-    if(obj->x-sx + obj_w >= w)
-      obj_w = w - (obj->x-sx);
-    if(obj->x < sx) {
-      int off = sx - obj->x;
-      src += off;
-      dst += off;
-      obj_w -= off;
-    }
-    
-    if(obj->y + obj_h >= h)
-      obj_h = h - obj->y;
-    for(y = 0 ; y < obj_h ; y++) {
-      for(x = 0 ; x < obj_w ; x++)
-        if(src[x] != vm->room->trans)
-          dst[x] = src[x];
-      dst += stride;
-      src += obj->width;
-    }
-  }
-  
-  for(a = 0 ; a < vm->num_actor ; a++) {
-    if(!vm->actor[a].room ||
-       vm->actor[a].room != vm->room->id ||
-       !vm->actor[a].costdec.cost) continue;
-    scc_log(LOG_MSG,"Draw actor %d at %dx%d\n",a,vm->actor[a].x,vm->actor[a].y);
-    scc_cost_dec_frame(&vm->actor[a].costdec,
-                       buffer + view->room_start*stride + dx,
-                       vm->actor[a].x-sx,vm->actor[a].y,
-                       w,h,stride,
-                       vm->actor[a].scale_x,vm->actor[a].scale_y);
-  }
-  
-  return 1;
-  */
+		view_data.copyPixels(vm_room.image.data, srect, dpoint, null,  SPUTMDisplayPalette.NULL_POINT, false);
 		
 		view_palette.mapTo(view_data); // Convert to RGB
 		view_data.unlock();
@@ -1283,5 +1247,4 @@ class SPUTM
 	public function flip()
 	{
 	}
-
 }

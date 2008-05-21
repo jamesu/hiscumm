@@ -24,7 +24,26 @@ import hiscumm.SPUTMResource;
 	Also included is a handy SCUMMThread pool which handles the scheduling of SCUMMThread's.
 */
 
-typedef SCUMMStack = List<Int>;
+class SCUMMStack
+{
+	var list: List<Int>;
+	
+	public function new()
+	{
+		list = new List<Int>();
+	}
+	
+	public function push(val: Int)
+	{
+		list.push(SCUMMThread.varIn(val));
+	}
+	
+	public function pop() : Int
+	{
+		return SCUMMThread.varOut(list.pop());
+	}
+}
+
 typedef SCUMMOpcode = SPUTM->SCUMMStack->SCUMMThread->Void;
 
 enum SCUMMThreadState
@@ -617,6 +636,18 @@ class SCUMMThread
 		}
 		
 		return r;
+	}
+	
+	public static inline function varIn(x: Int) : Int
+	{
+		// Convert to 16bit signed representation		
+		return (((x < 0) ? (0x10000 + x) : x) & 0xFFFF);
+	}
+	
+	public static inline function varOut(x: Int) : Int
+	{
+		// Convert to 32bit signed representation
+		return (x & 0x8000 != 0) ? x - 65536 : x;
 	}
 }
 
