@@ -13,9 +13,13 @@ hiscumm
 
 class Point
 {
-
+	public var x: Int;
+	public var y: Int;
+	
 	public function new(x: Int, y: Int) : Void
 	{
+		this.x = x;
+		this.y = y;
 	}
 
 }

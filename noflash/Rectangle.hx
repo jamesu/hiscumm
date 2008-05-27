@@ -12,9 +12,18 @@ hiscumm
 */
 
 class Rectangle
-{	
+{
+	public var x: Int;
+	public var y: Int;
+	public var width: Int;
+	public var height: Int;
+	
 	public function new(x: Int, y: Int, w: Int, h: Int) : Void
 	{
+		this.x = x;
+		this.y = y;
+		this.width = w;
+		this.height = h;
 	}
 
 }
