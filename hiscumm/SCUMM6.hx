@@ -782,6 +782,15 @@ class SCUMM6
 			}
 			return;
 		}
+		else if (subOp >= 0x68 && subOp <= 0x6B)
+		{
+			if (!engine.vm_res[subOp-0x68].nukeResource(res))
+			{
+				trace("Bad resource");
+				thread.return_state = SPUTM_ERROR;
+			}
+			return;
+		}
 		else if (subOp >= 0x6C && subOp <= 0x6F)
 		{
 			if (!engine.vm_res[subOp-0x6C].res[res].lock())

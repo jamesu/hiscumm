@@ -165,6 +165,15 @@ class SPUTMResource
 		offset=0;
 	}
 	
+	public function nuke() : Bool
+	{
+		instance.nuke();
+		instance = null;
+		if (isLocked() != 0)
+			unlock();
+		return true;
+	}
+	
 	public function lock() : Bool
 	{
 		flags |= FLAG_LOCKED;
@@ -195,11 +204,6 @@ class SPUTMResourceFactory
 	public function load(num: Int, reader: ResourceIO) : Dynamic
 	{
 		return null;
-	}
-	
-	public function nuke(res: SPUTMResource)
-	{
-		res.instance = null;
 	}
 }
 
@@ -304,9 +308,9 @@ class SPUTMResourceList
 		return resource.instance;
 	}
 
-	public function nukeResource(idx: Int)
+	public function nukeResource(idx: Int) : Bool
 	{
-		return factory.nuke(res[idx]);
+		return res[idx].nuke();
 	}
 }
 

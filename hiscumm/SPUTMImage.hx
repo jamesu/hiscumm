@@ -61,6 +61,19 @@ class SPUTMImage
 		data = new BitmapData(width, height, false, 0x00000000);
 	}
 	
+	public function nuke()
+	{
+		var i;
+		for (i in 0...zplanes.length)
+		{
+			zplanes[i].dispose();
+			zplanes[i] = null;
+		}
+		
+		zplanes = null;
+		data.dispose();
+	}
+	
 	static inline function readBit(bit: Int, cl: Int, bits: Int)
 	{
 		cl--;bit = bits&1; bits>>=1; // READ_BIT
@@ -244,9 +257,27 @@ class SPUTMImage
 		// Finally set the darn pixels!
 		data.lock();
 		
+		var end = SeekableTools.getSeekableLength(pixels);
+		var nonblanks = 0;
 		pixels.seek(0, SeekBegin);
+		while (end != 0)
+		{
+			if (pixels.readChar() != 0)
+				nonblanks++;
+			end--;
+		}
+		
+		if (nonblanks == 0)
+			haxe.Firebug.trace("Odd, SPUTMImage has blank pixels?!");
+		else
+			haxe.Firebug.trace(nonblanks + " non-blank pixels in SPUTMImage");
+		
+		pixels.seek(0, SeekBegin);
+		
 		#if flash9
 		data.setPixels(new Rectangle(0,0,width,height), pixels.byteArray);
+		#else true
+		data.setPixels(new Rectangle(0,0,width,height), pixels);
 		#end
 		data.unlock();
 		

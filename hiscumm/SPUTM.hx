@@ -652,7 +652,15 @@ class SPUTM
 		view_width = width;
 		view_height = height;
 		
+		if (view_data != null)
+			view_data.dispose();
+		
 		view_data = new BitmapData(view_width, view_height, false, 0xffff00ff);
+		#if js
+		js.Lib.document.firstChild.appendChild(view_data.canvas);
+		view_data.canvas.setAttribute('id', 'SPUTMOut');
+		view_data.canvas.setAttribute('style', 'border: 2px solid black');
+		#end
 		view.bitmapData = view_data;
 	}
 
@@ -1127,9 +1135,7 @@ class SPUTM
 		if (view_flags & VIEW_PALETTE_CHANGED > 0)
 		{
 			updatePalette();
-			#if flash9
-			view_flags &= ~VIEW_PALETTE_CHANGED;
-			#else js
+			#if !neko
 			view_flags &= ~VIEW_PALETTE_CHANGED;
 			#else neko
 			view_flags = Int32.toInt(

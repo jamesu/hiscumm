@@ -56,6 +56,13 @@ class SPUTMRoom
 		
 		current_palette = null;
 	}
+	
+	public function nuke()
+	{
+		if (image != null)
+			image.nuke();
+		image = null;
+	}
 }
 
 class SPUTMRoomFactory extends SPUTMResourceFactory

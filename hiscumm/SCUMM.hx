@@ -662,6 +662,10 @@ class SCUMMScript
 		id = num;
 		code = null;
 	}
+	
+	public function nuke()
+	{
+	}
 }
 
 class SCUMMScriptFactory extends SPUTMResourceFactory

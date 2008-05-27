@@ -31,8 +31,8 @@ typedef Input = neko.io.Input;
 typedef Output = neko.io.Output;
 #else js
 typedef ByteArray = noflash.ByteArray;
-typedef Bitmap = noflash.Bitmap;
-typedef BitmapData = noflash.BitmapData;
+typedef Bitmap = justjs.Bitmap;
+typedef BitmapData = justjs.BitmapData;
 typedef Rectangle = noflash.Rectangle;
 typedef Point = noflash.Point;
 typedef Int32 = noneko.Int32;

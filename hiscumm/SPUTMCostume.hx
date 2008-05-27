@@ -25,6 +25,10 @@ class SPUTMCostume
 	{
 		id = num;
 	}
+	
+	public function nuke()
+	{
+	}
 }
 
 class SPUTMCostumeFactory extends SPUTMResourceFactory
