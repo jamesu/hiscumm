@@ -8,6 +8,7 @@ hiscumm
 typedef MemoryIO = utils.JSByteIO;
 import noflash.Rectangle;
 import noflash.Point;
+import utils.SeekableTools;
 
 /*
 	BitmapData
@@ -65,79 +66,131 @@ class BitmapData
 	public function unlock()
 	{
 		//var context = canvas.getContext('2d');
-		//context.putImageData(imgdata, rect.x, rect.y);
+		//context.putImageData(pixels, 0, 0);
 	}
 	
 	public function setPixels(rect: Rectangle, colors: MemoryIO)
 	{
 		var context = canvas.getContext('2d');
 		
-		var cx = rect.x;
-		var cy = rect.y;
-		var ex = rect.x+rect.width;
+		var end = SeekableTools.getSeekableLength(colors);
 		var data = pixels.data;
-		var pw = pixels.width;
-		var ph = pixels.height;
-		var stride = rect.height;
-		var end = rect.width*rect.height;
 		var pos = 0;
-		var dw = 0;
-		while (pos != end)
+		while (end > 0)
 		{
-			if (cx == ex)
-			{
-				cx = 0;
-				cy += 1;
-			}
-			
-			if (!(cx > pw || cy > ph || cx < 0 || cy < 0))
-			{
-				dw = ((cy*stride)+cx)*4;
-				data[dw] = colors.readChar(); dw++;
-				data[dw] = colors.readChar(); dw++;
-				data[dw] = colors.readChar(); dw++;
-				data[dw] = 0xFF;colors.readChar(); // TEST
-			}
-			else
-			{
-				colors.readChar();
-				colors.readChar();
-				colors.readChar();
-				colors.readChar();
-			}
-			
-			cx += 1;
-			pos += 1;
+			data[pos] = colors.readChar();
+			data[pos+1] = colors.readChar();
+			data[pos+2] = colors.readChar();
+			data[pos+3] = 0xFF; colors.readChar();
+			pos += 4;
+			end -= 4;
 		}
-		
-		/*
-		var data = imgdata ? imgdata.data : context.getImageData(0,0,width,height);
-		var i = 0;
-		
-		var pitch = pixels.width;
-		for (i in 0...(rect.width*rect.height*4))
-		{
-			data[i] = 200;//Math.round((Math.random()*256)/255); //colors.readChar();
-		}
-		*/
+				
 		context.putImageData(pixels, 0, 0);
 	}
 	
 	public function copyPixels(source_bmap: BitmapData, rect: Rectangle, dest: Point, alpha: BitmapData, alphaPoint: Point, merge: Bool)
 	{
 		var context = canvas.getContext('2d');
-		var src_context = source_bmap.canvas.getContext('2d');
-		/*var src_imgdata = src_context.getImageData(rect.x, rect.y, rect.width, rect.height);
-		*/
-		context.putImageData(source_bmap.pixels, dest.x, dest.y); // TEST
+		
+		//context.putImageData(source_bmap.pixels, dest.x, dest.y); // TEST
+		
+		
+		//return;
+		
+		var source_stride = source_bmap.pixels.width;
+		var dest_stride = pixels.width;
+		var sx = 0;
+		var sy = 0;
+		var sw = 0;
+		var sh = 0;
+		
+		// Get source rect
+		if (rect == null)
+		{
+			sx = 0; sy = 0; sw = source_bmap.pixels.width; sh = source_bmap.pixels.height;
+		}
+		else
+		{
+			sx = rect.x; sy = rect.y; sw = rect.width; sh = rect.height;
+		}
+		
+		// Get dest rect
+		var dx = dest.x;
+		var dy = dest.y;
+		var dw = sw;
+		var dh = sh;
+		
+		var src_data = source_bmap.pixels.data;
+		var dst_data = pixels.data;
+		var end_pixels = rect.width * rect.height;
+		
+		var count = 0;
+		var cur_sx = sx;
+		var cur_sy = sy;
+		var cur_dx = dx;
+		var cur_dy = dy;
+		while (count != end_pixels)
+		{
+			var src_r = 0;
+			//var src_g = 0;
+			//var src_b = 0;
+			
+			// Grab src_* from source
+			if (cur_sx > source_bmap.pixels.width || cur_sy > source_bmap.pixels.height ||
+			    cur_sx < 0 || cur_sy < 0)
+			{
+				src_r = 0;
+				//src_g = 0;
+				//src_b = 0;
+			}
+			else
+			{
+				var pos = ((cur_sy*source_stride)+cur_sx)*4;
+				src_r = src_data[pos];
+				//src_g = src_data[pos+1];
+				//src_b = src_data[pos+2];
+			}
+			
+			// Plot to dest
+			if (!(cur_dx >= pixels.width || cur_dy >= pixels.height ||
+			    cur_dx < 0 || cur_dy < 0))
+			{
+				var pos = ((cur_dy*dest_stride)+cur_dx)*4;
+				
+				dst_data[pos] = src_r;
+				//dst_data[pos+1] = src_g;
+				//dst_data[pos+2] = src_b;
+			}
+			
+			// Increment copy
+			cur_sx += 1;
+			cur_dx += 1;
+			
+			// Check for new row
+			if (cur_sx >= (sx+sw))
+			{
+				cur_sx = sx;
+				cur_sy += 1;
+			}
+			
+			if (cur_dx >= (dx+dw))
+			{
+				cur_dx = dx;
+				cur_dy += 1;
+			}
+			
+			count++;
+		}
 		
 		//fillRect(new Rectangle(dest.x, dest.y, canvas.width, canvas.height), 0x55);
+				
+		context.putImageData(pixels, 0, 0);
 	}
 	
 	public function fillRect(rect: Rectangle, color: Int)
 	{
 		var context = canvas.getContext('2d');
-		context.fillStyle = "rgb(" + color + "," + color + "," + color + ")";
 		
 		
 		var dx = 0;
@@ -153,25 +206,11 @@ class BitmapData
 		}
 		else
 		{
-			dx = rect.x;
-			dy = rect.y;
-			dw = rect.width;
-			dh = rect.height;
-			
-			var delta = 0;
-			if (dx < 0)
-				dx = 0;
-			if (dy < 0)
-				dy = 0;
-			if (dx >= pixels.width)
-				dx = pixels.width;
-			if (dy > pixels.height)
-				dy = pixels.height;
-			
-			if (dx + dw > pixels.width)
-				dw = pixels.width-dx;
-			if (dy + dh > pixels.height)
-				dh = pixels.height-dx;
+			var clipped_rect = rect.intersection(new Rectangle(0, 0, pixels.width, pixels.height));
+			dx = clipped_rect.x;
+			dy = clipped_rect.y;
+			dw = clipped_rect.width;
+			dh = clipped_rect.height;
 		}
 		
 		// Now fill
@@ -205,24 +244,33 @@ class BitmapData
 	{
 		var context = canvas.getContext('2d');
 		var old_imgdata = null;
-		/*
-		if (rect == null)
-			old_imgdata = context.getImageData(0, 0, width, height);
-		else
-			old_imgdata = context.getImageData(rect.x, rect.y, rect.width, rect.height);
-		*/
-		/*
-		var new_imgdata = context.createImageData(rect.width, rect.height);
-		var data = imgdata.data;
-		var i = 0;
-		for (i in 0...(rect.width*rect.height))
+	}
+	
+	public function fastPaletteRemap(correct_colors: Array<Int>)
+	{
+		//return;
+		var context = canvas.getContext('2d');
+		var end_pos = pixels.width*pixels.height;
+		var cur_pos = 0;
+		var writ = 0;
+		var data = pixels.data;
+		var color = 0;
+		
+		while (cur_pos != end_pos)
 		{
-			var ofs = i*4;
-			data[i] = colors.readByte();
+			color = correct_colors[data[writ]];
+			
+			//list[i] = (r << 16) | (g << 8) | b;
+			data[writ] = (color >> 16) & 0xFF; writ++; // R
+			data[writ] = (color >> 8) & 0xFF; writ++;  // G
+			data[writ] = color & 0xFF; writ += 2;      // B
+			                                           // Alpha (skip)
+			
+			
+			cur_pos++;
 		}
 		
-		context.putImageData(new_imgdata, rect.x, rect.y);
-		*/
+		context.putImageData(pixels, 0, 0);
 	}
 
 }

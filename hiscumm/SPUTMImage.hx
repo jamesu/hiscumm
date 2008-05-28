@@ -257,6 +257,7 @@ class SPUTMImage
 		// Finally set the darn pixels!
 		data.lock();
 		
+		#if js
 		var end = SeekableTools.getSeekableLength(pixels);
 		var nonblanks = 0;
 		pixels.seek(0, SeekBegin);
@@ -271,6 +272,7 @@ class SPUTMImage
 			haxe.Firebug.trace("Odd, SPUTMImage has blank pixels?!");
 		else
 			haxe.Firebug.trace(nonblanks + " non-blank pixels in SPUTMImage");
+		#end
 		
 		pixels.seek(0, SeekBegin);
 		

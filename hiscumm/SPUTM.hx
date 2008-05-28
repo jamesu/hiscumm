@@ -47,8 +47,11 @@ class SPUTMPalette extends MemoryIO
 
 class SPUTMDisplayPalette
 {
+	#if !js
 	private var zeros: Array<Int>;
 	private var ones: Array<Int>;
+	#end
+	
 	private var list: Array<Int>;
 	
 	static public var NULL_POINT: Point = new Point(0,0);
@@ -56,18 +59,24 @@ class SPUTMDisplayPalette
 	public function new()
 	{
 		var i: Int;
+		#if !js
 		zeros = new Array<Int>();
 		ones = new Array<Int>();
+		#end
 		list = new Array<Int>();
 		
+		#if !js
 		zeros[255] = 0;
 		ones[255] = 0;
+		#end
 		list[255] = 0;
 		
 		for (i in 0...255)
 		{
+			#if !js
 			zeros[i] = 0x00;
 			ones[i] = 0xFF;
+			#end
 			list[i] = 0;
 		}
 	}
@@ -89,14 +98,20 @@ class SPUTMDisplayPalette
 			
 			list[i] = (r << 16) | (g << 8) | b;
 			
+			#if !js
 			zeros[i] = 0x00;
 			ones[i] = 0xFF;
+			#end
 		}
 	}
 	
 	public function mapTo(bmap: BitmapData)
 	{
+		#if !js
 		bmap.paletteMap(bmap, bmap.rect, NULL_POINT, zeros, zeros, list, null);
+		#else true
+		bmap.fastPaletteRemap(list);
+		#end
 	}
 }
 
