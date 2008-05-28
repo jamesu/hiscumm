@@ -672,7 +672,7 @@ class SPUTM
 		
 		view_data = new BitmapData(view_width, view_height, false, 0xffff00ff);
 		#if js
-		js.Lib.document.firstChild.appendChild(view_data.canvas);
+		js.Lib.document.getElementById('sputm:display').appendChild(view_data.canvas);
 		view_data.canvas.setAttribute('id', 'SPUTMOut');
 		view_data.canvas.setAttribute('style', 'border: 2px solid black');
 		#end
