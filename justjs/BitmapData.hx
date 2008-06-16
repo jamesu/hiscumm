@@ -92,11 +92,7 @@ class BitmapData
 	public function copyPixels(source_bmap: BitmapData, rect: Rectangle, dest: Point, alpha: BitmapData, alphaPoint: Point, merge: Bool)
 	{
 		var context = canvas.getContext('2d');
-		
 		//context.putImageData(source_bmap.pixels, dest.x, dest.y); // TEST
-		
-		
-		//return;
 		
 		var source_stride = source_bmap.pixels.width;
 		var dest_stride = pixels.width;
@@ -115,83 +111,15 @@ class BitmapData
 			sx = rect.x; sy = rect.y; sw = rect.width; sh = rect.height;
 		}
 		
-		// Get dest rect
-		var dx = dest.x;
-		var dy = dest.y;
-		var dw = sw;
-		var dh = sh;
-		
-		var src_data = source_bmap.pixels.data;
-		var dst_data = pixels.data;
-		var end_pixels = rect.width * rect.height;
-		
-		var count = 0;
-		var cur_sx = sx;
-		var cur_sy = sy;
-		var cur_dx = dx;
-		var cur_dy = dy;
-		while (count != end_pixels)
-		{
-			var src_r = 0;
-			//var src_g = 0;
-			//var src_b = 0;
-			
-			// Grab src_* from source
-			if (cur_sx > source_bmap.pixels.width || cur_sy > source_bmap.pixels.height ||
-			    cur_sx < 0 || cur_sy < 0)
-			{
-				src_r = 0;
-				//src_g = 0;
-				//src_b = 0;
-			}
-			else
-			{
-				var pos = ((cur_sy*source_stride)+cur_sx)*4;
-				src_r = src_data[pos];
-				//src_g = src_data[pos+1];
-				//src_b = src_data[pos+2];
-			}
-			
-			// Plot to dest
-			if (!(cur_dx >= pixels.width || cur_dy >= pixels.height ||
-			    cur_dx < 0 || cur_dy < 0))
-			{
-				var pos = ((cur_dy*dest_stride)+cur_dx)*4;
-				
-				dst_data[pos] = src_r;
-				//dst_data[pos+1] = src_g;
-				//dst_data[pos+2] = src_b;
-			}
-			
-			// Increment copy
-			cur_sx += 1;
-			cur_dx += 1;
-			
-			// Check for new row
-			if (cur_sx >= (sx+sw))
-			{
-				cur_sx = sx;
-				cur_sy += 1;
-			}
-			
-			if (cur_dx >= (dx+dw))
-			{
-				cur_dx = dx;
-				cur_dy += 1;
-			}
-			
-			count++;
-		}
-		
-		//fillRect(new Rectangle(dest.x, dest.y, canvas.width, canvas.height), 0x55);
-				
-		context.putImageData(pixels, 0, 0);
+		// Accelerated draw using canvas operations
+		this.pixels = null;
+		context.putImageData(source_bmap.pixels, dest.x, dest.y, sx, sy, sw, sh);
+		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
 	}
 	
 	public function fillRect(rect: Rectangle, color: Int)
 	{
 		var context = canvas.getContext('2d');
-		
 		
 		var dx = 0;
 		var dy = 0;
@@ -213,31 +141,11 @@ class BitmapData
 			dh = clipped_rect.height;
 		}
 		
-		// Now fill
-		var start_pos = ((dy*stride)+dx)*4;
-		var end_pos = (((dy+dh)*stride)+(dx+dw))*4;
-		var cur_pos = start_pos;
-		var cur_x = 0;
-		var cur_row = 0;
-		var data = pixels.data;
-		
-		while (cur_pos != end_pos)
-		{
-			if (cur_x == dw)
-			{
-				cur_row += 1;
-				cur_pos = start_pos + (cur_row*stride);
-				cur_x = 0;
-			}
-			
-			data[cur_pos] = color; cur_pos += 1;
-			data[cur_pos] = color; cur_pos += 1;
-			data[cur_pos] = color; cur_pos += 1;
-			data[cur_pos] = 0xFF; cur_pos += 1;
-			cur_x += 1;
-		}
-		
-		context.putImageData(pixels, 0, 0);
+		// Accelerated draw using canvas operations
+		this.pixels = null;
+		context.fillStyle = "rgb(" + color + "," + color + "," + color + ")";
+		context.fillRect(dx, dy, dw, dh);
+		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
 	}
 	
 	public function paletteMap(bmap: BitmapData, rect: Rectangle, point: Point, zeros: Array<Int>, zeros2: Array<Int>, list:Array<Int>, Void)
