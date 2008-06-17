@@ -368,12 +368,13 @@ class JSByteIO implements Input, implements Output, implements Seekable
 		// Grab data from url
 		var req: Dynamic = new XMLHttpRequest();
 		req.open("GET", url, false);
-		req.overrideMimeType("text/plain; charset=x-user-defined");
+		if (req.overrideMimeType)
+			req.overrideMimeType("text/plain; charset=x-user-defined");
 		req.send(null);
 		
 		// Write result to byte array
 		var str: String = (req.status != 200) ? "" : req.responseText;
-		trace("XMLHttpRequest: Loaded " + str.length + " bytes");
+		trace("XMLHttpRequest: Loaded " + str.length + " bytes (Type = '" + req.getResponseHeader("Content-Type") + "')");
 		res.prepare(str.length);
 		res.write(str);
 		res.pos = 0;

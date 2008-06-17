@@ -1,2 +1,7 @@
 -js test.js
 -main hiscumm.JSTest
+
+--next
+
+-main tools.ToScript
+-neko toscript.n
