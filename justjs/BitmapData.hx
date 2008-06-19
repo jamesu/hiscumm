@@ -44,11 +44,6 @@ class BitmapData
 		
 		var ctx = this.canvas.getContext("2d");
 		this.pixels = ctx.getImageData(0,0,this.canvas.width, this.canvas.height);
-		
-		/*
-		var foo = ctx.getImageData(0,0,this.canvas.width,this.canvas.height);
-		haxe.Firebug.trace("New BitmapData, " + foo.width + "," + foo.height);
-		haxe.Firebug.trace("IMGDATA == " + ctx.createImageData + ", " + ctx.getImageData + ", " + ctx.putImageData);*/
 	}
 	
 	public function dispose()
@@ -65,8 +60,11 @@ class BitmapData
 	
 	public function unlock()
 	{
-		//var context = canvas.getContext('2d');
-		//context.putImageData(pixels, 0, 0);
+		var context = canvas.getContext('2d');
+		
+	    // Reload pixels
+		this.pixels = null;
+		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
 	}
 	
 	public function setPixels(rect: Rectangle, colors: MemoryIO)
@@ -85,14 +83,13 @@ class BitmapData
 			pos += 4;
 			end -= 4;
 		}
-				
+		
 		context.putImageData(pixels, 0, 0);
 	}
 	
 	public function copyPixels(source_bmap: BitmapData, rect: Rectangle, dest: Point, alpha: BitmapData, alphaPoint: Point, merge: Bool)
 	{
 		var context = canvas.getContext('2d');
-		//context.putImageData(source_bmap.pixels, dest.x, dest.y); // TEST
 		
 		var source_stride = source_bmap.pixels.width;
 		var dest_stride = pixels.width;
@@ -112,9 +109,7 @@ class BitmapData
 		}
 		
 		// Accelerated draw using canvas operations
-		this.pixels = null;
 		context.putImageData(source_bmap.pixels, dest.x, dest.y, sx, sy, sw, sh);
-		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
 	}
 	
 	public function fillRect(rect: Rectangle, color: Int)
@@ -142,10 +137,8 @@ class BitmapData
 		}
 		
 		// Accelerated draw using canvas operations
-		this.pixels = null;
 		context.fillStyle = "rgb(" + color + "," + color + "," + color + ")";
 		context.fillRect(dx, dy, dw, dh);
-		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
 	}
 	
 	public function paletteMap(bmap: BitmapData, rect: Rectangle, point: Point, zeros: Array<Int>, zeros2: Array<Int>, list:Array<Int>, Void)
@@ -156,8 +149,12 @@ class BitmapData
 	
 	public function fastPaletteRemap(correct_colors: Array<Int>)
 	{
-		//return;
 		var context = canvas.getContext('2d');
+		
+	    // Reload pixels
+		this.pixels = null;
+		this.pixels = context.getImageData(0,0,this.canvas.width, this.canvas.height);
+		
 		var end_pos = pixels.width*pixels.height;
 		var cur_pos = 0;
 		var writ = 0;
