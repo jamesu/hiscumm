@@ -2,8 +2,23 @@ package hiscumm;
 /*
 hiscumm
 -----------
-Copyright (C) 2007 - 2008 James S Urquhart (jamesu at gmail.com)
-Portions derived from code Copyright (C) 2004-2006 Alban BedelThis program is free software; you can redistribute it and/ormodify it under the terms of the GNU General Public Licenseas published by the Free Software Foundation; either version 2of the License, or (at your option) any later version.This program is distributed in the hope that it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty ofMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theGNU General Public License for more details.You should have received a copy of the GNU General Public Licensealong with this program; if not, write to the Free SoftwareFoundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+Copyright (C) 2007 - 2008 James S Urquhart (jamesu at gmail.com)
+Portions derived from code Copyright (C) 2004-2006 Alban Bedel
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 import hiscumm.Common;
@@ -28,6 +43,9 @@ import hiscumm.SPUTMResource;
 		- READ_BIT conditions re-arranged as haXe doesn't seem to support the comma operator
 		- READ_BIT and FILL_BITS are inline as haXe doesn't support #define
 		- Pixels written as 32bit integers so the images can easily be converted to BitmapData.
+	
+	Observations:
+		- unkDecode*_trans is the same as unkDecode, except transparent pixels aren't written
 	
 	TODO:
 		- *trans decoding
@@ -93,6 +111,7 @@ class SPUTMImage
 	public function load(reader: ResourceIO) : Bool
 	{
 		var i: Int;
+		var z: Int;
 		
 		var chunkID: Int32 = Int32.read(reader, true);
 		var chunkSize: Int = Int32.toInt(Int32.read(reader, true));
@@ -129,19 +148,23 @@ class SPUTMImage
 		
 		for ( i in 0...zplanes.length)
 		{
-			chunkID = Int32.read(reader, true);
+			chunkID = Int32.ofInt(reader.readUInt16B()); // ZP
+			z = Std.parseInt(reader.read(2)); // ID
 			chunkSize = Int32.toInt(Int32.read(reader, true));
 			
-			trace("zplane ChunkID == " + ChunkReader.chunkIDToStr(chunkID)); // TODO: error check
+			if (SPUTMResourceChunk.identify(chunkID) != CHUNK_ZP || z < 0 || z > zplanes.length)
+			{
+				trace("Bad ZPlane ChunkID == " + ChunkReader.chunkIDToStr(chunkID) + ", ID == " + z);
+				return false;
+			}
 			
 			var zplane: MemoryIO = new MemoryIO();
 			zplane.prepare(chunkSize - 8);
 			zplane.writeInput(reader);
 			zplane.seek(0, SeekBegin);
 			
-			trace("Dec");
-			
-			if (!decodeZPlane(i, data.width >> 3 /* div 8 */, data.width, data.height, zplane, -1))
+			// TODO: figure out if we need to offset z by -1
+			if (!decodeZPlane(z, data.width >> 3 /* div 8 */, data.width, data.height, zplane, -1))
 			{
 				trace("Bad zplane data");
 				return false;
@@ -271,8 +294,22 @@ class SPUTMImage
 		return true;
 	}
 	
-	public function decodeZPlane(idx: Int, stride: Int, width: Int, height: Int, zplane: MemoryIO, transparentColor: Int)
+	public function decodeZPlane(idx: Int, stride: Int, width: Int, height: Int, zplane: MemoryIO, transparentColor: Int) : Bool
 	{
+		var stripes: Int = (width >> 3);
+		var i: Int;
+		
+		if (width != stripes*8)
+		{
+			trace("Can't decode zbuf if width %% 8 != 0 !!");
+			return false;
+		}
+		
+		for ( i in 0...stripes )
+		{
+			// TODO
+		}	
+		
 		return true;
 	}
 	  
@@ -391,7 +428,121 @@ class SPUTMImage
 	
 	static public function unkDecodeA_trans(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, transparentColor: Int,  decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		trace("CRAP");
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
+		var cl: Int = 8;
+		var bit: Int = 0;
+		var incm: Int;
+		var reps: Int;
+				
+		//trace("unkDecodeA (" + smap.length + ", " + color + "," + bits  + ")...");
+		
+		while (true)
+		{
+			var x: Int = 8;
+			
+			while (true)
+			{
+				fillBits(cl, bits, smap);
+				if (color != transparentColor)
+				   pixels.writeUInt32(color + pal_mod);
+				else
+				   pixels.seek(4, SeekCur);
+				pixels_written++;
+				
+				while (true) // againPos:
+				{
+					//dtrace("againPos");
+					readBit(bit, cl, bits);
+					if (bit > 0) // if (!READ_BIT)  [collapsed]
+					{
+						readBit(bit, cl, bits);
+						if (bit == 0)	// else if (!READ_BIT)
+						{
+							fillBits(cl, bits, smap);
+						
+							color = bits & decomp_mask;
+							bits >>= decomp_shr;
+							cl -= decomp_shr;
+							
+							//dtrace("nrb2");
+						}
+						else
+						{
+							//dtrace("nrb3");
+							incm = (bits & 7) - 4;
+							cl -= 3;
+							bits >>= 3;
+							if (incm != 0)
+							{
+								color += incm;
+								dtrace("incm " + incm);
+							}
+							else
+							{
+								fillBits(cl, bits, smap);
+
+								reps = (bits & 0xFF);
+								while (true)
+								{
+									x--;
+									if (x == 0)
+									{
+										x = 8;
+										
+										pixels.seek(stride - (8 * 4), SeekCur);
+										height--;
+										if (height == 0)
+										{
+											dtrace("HEIGHT EXIT " + height);
+											return;
+										}
+									}
+									//dtrace("REPS X=" + x + " @  " + reps);
+									
+									if (color != transparentColor)
+									   pixels.writeUInt32(color + pal_mod);
+									else
+									   pixels.seek(4, SeekCur);
+									pixels_written++;
+									
+									reps--;
+								
+									if (dtrace_on && reps == 0) // always reads reps+1 bytes?
+										break;
+									
+									if (reps < 0) // incorrect
+										break;
+								}
+							
+								bits >>= 8;
+								bits |= (smap.readChar()) << (cl-8);
+							
+								continue; //goto againPos;
+							}
+						}
+					}
+					else
+					{
+						//dtrace("nrb1");
+					}
+					
+					break;
+				} // end againPos
+				dtrace("END againPos");
+				x--;
+				
+				if (x == 0)
+					break;
+			}
+			pixels.seek(stride - (8 * 4), SeekCur);
+			height--;
+			
+			dtrace("NXT H " + height);
+			
+			if (height == 0)
+				break;
+		}
 	}
 	
 	static public function unkDecodeB(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, decomp_mask : Int, decomp_shr : Int) : Void
@@ -453,7 +604,62 @@ class SPUTMImage
 	
 	static public function unkDecodeB_trans(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, transparentColor: Int,  decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		trace("CRAP 3");
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
+		var cl: Int = 8;
+		var bit: Int = 100;
+		var inc: Int = -1;
+		
+		while (true)
+		{
+			var x: Int = 8;
+			
+			while (true)
+			{
+				fillBits(cl, bits, smap);
+				
+				if (color != transparentColor)
+				   pixels.writeUInt32(color + pal_mod);
+				else
+				   pixels.seek(4, SeekCur);
+				
+				readBit(bit, cl, bits);
+				if (bit > 0) // if (!READ_BIT) [collapsed]
+				{
+					readBit(bit, cl, bits);
+					if (bit == 0) // else if (!READ_BIT)
+					{
+						fillBits(cl, bits, smap);
+						
+						color = bits & decomp_mask;
+						bits >>= decomp_shr;
+						cl -= decomp_shr;
+						inc = -1;
+					}
+					else
+					{
+						readBit(bit, cl, bits);
+						if (bit == 0) // else if (!READ_BIT)
+						{
+							color += inc;
+						}
+						else
+						{
+							inc = -inc;
+							color += inc;
+						}
+					}
+				}
+				
+				if (--x == 0)
+					break;
+			}
+			
+			pixels.seek(stride - (8*4), SeekCur);
+			
+			if (--height == 0)
+				break;
+		}
 	}
 	
 	static public function unkDecodeC(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, decomp_mask : Int, decomp_shr : Int) : Void
@@ -534,7 +740,85 @@ class SPUTMImage
 	
 	static public function unkDecodeC_trans(pixels: MemoryIO, stride : Int, smap : MemoryIO, height : Int, pal_mod : Int, transparentColor: Int, decomp_mask : Int, decomp_shr : Int) : Void
 	{
-		trace("CRAP 5");
+		var color: Int = smap.readChar();
+		var bits: Int = 0; bits = smap.readChar();
+		var cl: Int = 8;
+		var bit: Int = 100;
+		var inc: Int = -1;
+		
+		var x: Int = 8;
+
+		
+		while (true)
+		{
+			var h: Int = height;
+			while (true)
+			{  
+				fillBits(cl, bits, smap);
+				
+				if (color != transparentColor)
+				{
+					pixels.writeUInt32(color + pal_mod);
+					pixels.seek(stride-4, SeekCur);
+				}
+				else
+				{
+					pixels.seek(stride, SeekCur);
+				}
+				h--;
+				
+				readBit(bit, cl, bits);
+				if (bit > 0) // if (!READ_BIT) [collapsed]
+				{
+					readBit(bit, cl, bits);
+					if (bit == 0) // else if (!READ_BIT)
+					{
+						fillBits(cl, bits, smap);
+						
+						color = bits & decomp_mask;
+						bits >>= decomp_shr;
+						cl -= decomp_shr;
+						inc = -1;
+						
+						if (h == 0)
+							break;
+						else
+							continue;
+					}			 
+					
+					readBit(bit, cl, bits);				
+					if (bit == 0) // if (!READ_BIT)
+					{
+						color += inc;
+						
+						if (h == 0)
+							break;
+						else
+							continue;
+					}
+				}
+				else
+				{
+					if (h == 0)
+						break;
+					else
+						continue;
+				}
+				
+				// Default
+				inc = -inc;
+				color += inc;
+				
+				if (h == 0)
+					break;
+			}
+			
+			pixels.seek(-((height * stride) - 4), SeekCur);
+			
+			x--;
+			if (x == 0)
+				break;
+		}
 	}
 }
 

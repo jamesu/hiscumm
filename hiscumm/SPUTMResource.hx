@@ -61,6 +61,7 @@ enum SPUTMResourceChunkType
 	CHUNK_WRAP;
 	CHUNK_OFFS;
 	CHUNK_APAL;
+	CHUNK_ZP;
 
 	CHUNK_UNKNOWN;
 }
@@ -130,7 +131,8 @@ class SPUTMResourceChunk
 	
 		new SPUTMResourceChunk(CHUNK_WRAP, Int32.make(0x5752, 0x4150)),
 		new SPUTMResourceChunk(CHUNK_OFFS, Int32.make(0x4F46, 0x4653)),
-		new SPUTMResourceChunk(CHUNK_APAL, Int32.make(0x4150, 0x414C))
+		new SPUTMResourceChunk(CHUNK_APAL, Int32.make(0x4150, 0x414C)),
+		new SPUTMResourceChunk(CHUNK_ZP, Int32.ofInt(0x5a50))
 	];
 }
 
