@@ -10,14 +10,14 @@ Portions derived from code Copyright (C) 2004-2006 Alban Bedel
 import hiscumm.Common;
 #if neko
 import neko.io.File;
-#else !neko
+#else
 import utils.Seekable;
 #end
 
 #if flash9
 import flash.utils.Timer;
 import flash.events.TimerEvent;
-#else true
+#else
 import haxe.Timer;
 #end
 
@@ -109,7 +109,7 @@ class SPUTMDisplayPalette
 	{
 		#if !js
 		bmap.paletteMap(bmap, bmap.rect, NULL_POINT, zeros, zeros, list, null);
-		#else true
+		#else
 		bmap.fastPaletteRemap(list);
 		#end
 	}
@@ -1072,7 +1072,7 @@ class SPUTM
 	{
 		#if flash9
 		return flash.Lib.getTimer();
-		#else true
+		#else
 		return Timer.stamp() * 1000;
 		#end
 	}
@@ -1084,10 +1084,10 @@ class SPUTM
 		time = new Timer(UPDATE_INTERVAL);
 		time.addEventListener(TimerEvent.TIMER, onTime);
 		time.start();
-		#else !neko
+		#elseif !neko
 		time = new Timer(UPDATE_INTERVAL);
 		time.run = function() { SPUTM.instance.onTime(); }
-		#else true
+		#else
 		while (true)
 		{
 			onTime();
@@ -1100,7 +1100,7 @@ class SPUTM
 	{
 		#if neko
 		neko.Sys.exit(0);
-		#else true
+		#else
 		time.stop();
 		#end
 	}
@@ -1113,7 +1113,7 @@ class SPUTM
 		onTick(curTime - lastTime);
 		lastTime = curTime;
 	}
-	#else !flash9
+	#else
 	public function onTime()
 	{
 		//trace("Update!");
@@ -1152,7 +1152,7 @@ class SPUTM
 			updatePalette();
 			#if !neko
 			view_flags &= ~VIEW_PALETTE_CHANGED;
-			#else neko
+			#else
 			view_flags = Int32.toInt(
 			                              Int32.and(Int32.ofInt(view_flags),
 			                              Int32.complement(Int32.ofInt(VIEW_PALETTE_CHANGED))

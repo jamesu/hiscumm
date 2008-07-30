@@ -25,7 +25,7 @@ import hiscumm.Common;
 
 #if neko
 import neko.io.File;
-#else !neko
+#else
 import utils.Seekable;
 #end
 
@@ -284,7 +284,7 @@ class SPUTMImage
 		
 		#if flash9
 		data.setPixels(new Rectangle(0,0,width,height), pixels.byteArray);
-		#else true
+		#else
 		data.setPixels(new Rectangle(0,0,width,height), pixels);
 		#end
 		data.unlock();

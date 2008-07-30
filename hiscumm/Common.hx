@@ -18,7 +18,7 @@ typedef MemoryIO = utils.FlashByteIO;
 typedef ResourceIO = utils.FlashByteIO;
 typedef Input = noneko.Input;
 typedef Output = noneko.Output;
-#else neko
+#elseif neko
 typedef ByteArray = noflash.ByteArray;
 typedef Bitmap = noflash.Bitmap;
 typedef BitmapData = noflash.BitmapData;
@@ -29,7 +29,7 @@ typedef MemoryIO = utils.NekoByteIO;
 typedef ResourceIO = neko.io.FileInput;
 typedef Input = neko.io.Input;
 typedef Output = neko.io.Output;
-#else js
+#elseif js
 typedef ByteArray = noflash.ByteArray;
 typedef Bitmap = justjs.Bitmap;
 typedef BitmapData = justjs.BitmapData;

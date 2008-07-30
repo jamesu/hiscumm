@@ -11,7 +11,7 @@ import hiscumm.Common;
 
 #if neko
 import neko.io.File;
-#else !neko
+#else
 import utils.Seekable;
 #end
 
@@ -74,7 +74,7 @@ class SPUTMRoomFactory extends SPUTMResourceFactory
 		name = "ROOM";
 	}
 
-	public function load(idx: Int, reader: ResourceIO) : Dynamic
+	override public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the bytecode from the offset
 		

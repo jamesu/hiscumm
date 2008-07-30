@@ -177,7 +177,7 @@ class ByteArray
 }
 
 
-#else js
+#elseif js
 
 //import neko.Int32;
 typedef UInt = Int;

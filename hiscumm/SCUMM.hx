@@ -10,7 +10,7 @@ import hiscumm.Common;
 
 #if neko
 import neko.io.File;
-#else !neko
+#else
 import utils.Seekable;
 #end
 
@@ -677,7 +677,7 @@ class SCUMMScriptFactory extends SPUTMResourceFactory
 		name = "SCRIPT";
 	}
 	
-	public function load(idx: Int, reader: ResourceIO) : Dynamic
+	override public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the bytecode from the offset
 		var chunkID: Int32 = Int32.read(reader, true);

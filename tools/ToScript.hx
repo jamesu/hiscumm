@@ -31,7 +31,7 @@ class ToScript
 	   var i = 0;
 	   while (i < in_str.length)
 	   {
-	       neko.Lib.print(in_str.charCodeAt(i));
+	       neko.Lib.print(in_str.get(i));
 	       i += 1;
 	       if (i < in_str.length)
 	           neko.Lib.print(",");

@@ -11,7 +11,7 @@ import hiscumm.Common;
 
 #if neko
 import neko.io.File;
-#else !neko
+#else
 import utils.Seekable;
 #end
 

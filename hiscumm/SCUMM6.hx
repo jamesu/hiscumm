@@ -1637,6 +1637,7 @@ class SCUMM6
 			default:
 				trace("dimArray default!");
 				thread.return_state = SPUTM_ERROR;
+				return;
 		}
 		
 		array = thread.readShort();
@@ -1714,6 +1715,7 @@ class SCUMM6
 			default:
 				trace("dimArray default!");
 				thread.return_state = SPUTM_ERROR;
+				return;
 		}
 		
 		array = thread.readShort();

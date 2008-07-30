@@ -40,7 +40,7 @@ class SPUTMCostumeFactory extends SPUTMResourceFactory
 		name = "COSTUME";
 	}
 
-	public function load(idx: Int, reader: ResourceIO) : Dynamic
+	override public function load(idx: Int, reader: ResourceIO) : Dynamic
 	{
 		// Need to load the costume from the offset
 		var chunkID: Int32 = Int32.read(reader, true);
